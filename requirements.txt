@@ -13,8 +13,8 @@ google-auth-oauthlib==1.1.0
 gspread==5.11.0
 oauth2client==4.1.3
 
-# Data processing (QUAN TRỌNG)
+# Data processing (QUAN TRỌNG) - UPDATED
 numpy==1.24.4
-pandas==2.0.3
+pandas==1.5.3  # Thay vì 2.0.3
 
 python-dateutil==2.8.2
