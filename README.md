@@ -1,2 +1,2 @@
-# Kamala-houskeeping-managerment
-Web quản lý bộ phận buồng phòng
+# Kamala-housekeeping-managerment
+Web quản lý nội bộ phận buồng phòng khách sạn Kamala

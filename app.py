@@ -1,34 +1,40 @@
 from flask import Flask, render_template, jsonify, request, session, redirect, url_for
 from config import Config
+from models.database import DatabaseManager
 from models.data_processor import DataProcessor
 from models.hk_logger import HKLogger
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from functools import wraps
 import os
-import json
+import threading
 
 # Cấu hình logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 def create_app():
-    """Factory function để tạo Flask app"""
+    """Factory function để tạo Flask app với PostgreSQL"""
     app = Flask(__name__)
     app.config.from_object(Config)
     app.config['SECRET_KEY'] = Config.SECRET_KEY
     
-    # Khởi tạo data processor
+    # Khởi tạo database manager với PostgreSQL
+    db_manager = DatabaseManager()
+    
+    # Khởi tạo data processor với database
     data_processor = DataProcessor(
+        db_manager=db_manager,
         api_key=Config.API_KEY,
         spreadsheet_id=Config.SPREADSHEET_ID,
         range_name=Config.RANGE_NAME
     )
     
-    # Khởi tạo HK logger
-    hk_logger = HKLogger()
+    # Khởi tạo HK logger với database
+    hk_logger = HKLogger(db_manager)
     
-    # Lưu data processor và hk logger vào app context
+    # Lưu các instances vào app context
+    app.db_manager = db_manager
     app.data_processor = data_processor
     app.hk_logger = hk_logger
 
@@ -92,7 +98,7 @@ def create_app():
                 return render_template('login.html', 
                                     error='Vui lòng điền đầy đủ thông tin')
             
-            if department_code != '123':
+            if department_code != Config.DEPARTMENT_CODE:
                 return render_template('login.html', 
                                     error='Mã bộ phận không chính xác')
             
@@ -122,7 +128,7 @@ def create_app():
     def print_tasksheet():
         """Route để in tasksheet - chỉ dành cho FO"""
         try:
-            # Lấy dữ liệu phòng
+            # Lấy dữ liệu phòng từ database
             result = app.data_processor.get_all_rooms()
             if not result['success']:
                 return render_template('error.html', error="Không thể tải dữ liệu phòng"), 500
@@ -141,7 +147,13 @@ def create_app():
         except Exception as e:
             logger.error(f"Lỗi khi tạo tasksheet: {e}")
             return render_template('error.html', error="Lỗi khi tạo tasksheet"), 500
-
+    @app.route('/bulk-edit')
+    @login_required
+    @fo_required
+    def bulk_edit():
+        """Trang chỉnh sửa hàng loạt dành cho FO"""
+        user_info = session.get('user_info', {})
+        return render_template('bulk_edit.html', user=user_info)
     # ==================== API ENDPOINTS ====================
 
     @app.route('/api/user-info')
@@ -247,38 +259,15 @@ def create_app():
     def export_hk_report():
         """Xuất báo cáo HK dạng HTML để in"""
         try:
-            # Lấy dữ liệu báo cáo trong ngày (từ 8h15 đến hiện tại)
-            now = datetime.now()
-            start_time = now.replace(hour=8, minute=15, second=0, microsecond=0)
-            # Nếu bây giờ là trước 8h15, thì lấy từ 8h15 ngày hôm trước
-            if now < start_time:
-                start_time = start_time - timedelta(days=1)
-            
-            # Lấy dữ liệu từ database
-            report_data = HousekeepingReport.query.filter(
-                HousekeepingReport.timestamp >= start_time
-            ).order_by(HousekeepingReport.timestamp.desc()).all()
-
-            # Chuyển đổi dữ liệu thành danh sách các dict
-            report_list = []
-            for report in report_data:
-                report_list.append({
-                    'timestamp': report.timestamp,
-                    'user_name': report.user_name,
-                    'room_no': report.room_no,
-                    'action_type': report.action_type,
-                    'new_status': report.new_status,
-                    'action_detail': report.action_detail
-                })
-
-            # Tính toán thống kê
-            statistics = calculate_hk_statistics(report_data)
+            # Lấy dữ liệu báo cáo
+            report_data = app.hk_logger.get_today_report()
+            statistics = app.hk_logger.get_report_statistics(report_data)
 
             # Render template print_report.html và trả về
             return render_template('print_report.html', 
-                                 report_data=report_list, 
+                                 report_data=report_data, 
                                  statistics=statistics,
-                                 report_time=now)
+                                 report_time=datetime.now())
         except Exception as e:
             logger.error(f"Lỗi xuất báo cáo HK: {e}")
             return "Lỗi khi tạo báo cáo", 500
@@ -289,12 +278,9 @@ def create_app():
     def clear_hk_report():
         """API xóa toàn bộ lịch sử báo cáo HK (chỉ FO)"""
         try:
-            # Implementation for clearing HK report logs
-            log_file = os.path.join(Config.DATA_DIR, 'hk_activity_log.json')
-            if os.path.exists(log_file):
-                with open(log_file, 'w', encoding='utf-8') as f:
-                    json.dump([], f, ensure_ascii=False, indent=2)
-                
+            success = app.hk_logger.clear_all_logs()
+            
+            if success:
                 logger.info("Đã xóa toàn bộ lịch sử báo cáo HK")
                 return jsonify({
                     'success': True,
@@ -304,8 +290,8 @@ def create_app():
             else:
                 return jsonify({
                     'success': False,
-                    'error': 'File báo cáo không tồn tại'
-                }), 404
+                    'error': 'Không thể xóa logs HK'
+                }), 500
                 
         except Exception as e:
             logger.error(f"Lỗi xóa báo cáo HK: {e}")
@@ -321,16 +307,27 @@ def create_app():
         try:
             user_info = f"{session.get('user_info', {}).get('name', 'Unknown')} ({session.get('user_info', {}).get('department', 'Unknown')})"
             
-            rooms = app.data_processor.update_from_google_sheets(user_info)
+            # Sử dụng phương thức mới để khởi tạo từ Google Sheets
+            success = app.data_processor.initialize_rooms_from_google_sheets(user_info)
             
-            logger.info(f"Data refreshed by {user_info}. Total rooms: {len(rooms)}")
-            
-            return jsonify({
-                'success': True,
-                'message': 'Dữ liệu đã được cập nhật thành công từ Google Sheets',
-                'total_rooms': len(rooms),
-                'timestamp': datetime.now().isoformat()
-            })
+            if success:
+                result = app.data_processor.get_all_rooms()
+                total_rooms = len(result['data']) if result['success'] else 0
+                
+                logger.info(f"Data refreshed by {user_info}. Total rooms: {total_rooms}")
+                
+                return jsonify({
+                    'success': True,
+                    'message': 'Dữ liệu đã được cập nhật thành công từ Google Sheets',
+                    'total_rooms': total_rooms,
+                    'timestamp': datetime.now().isoformat()
+                })
+            else:
+                return jsonify({
+                    'success': False,
+                    'error': 'Không thể cập nhật dữ liệu từ Google Sheets'
+                }), 500
+                
         except Exception as e:
             logger.error(f"Error refreshing data: {e}")
             return jsonify({
@@ -402,11 +399,23 @@ def create_app():
             user_info_str = f"{user_info.get('name', 'Unknown')} ({user_info.get('department', 'Unknown')})"
             
             # Gọi hàm update_room_data
-            app.data_processor.update_room_data(room_no, updated_data, user_info_str)
+            success = app.data_processor.update_room_data(room_no, updated_data, user_info_str)
+            
+            if not success:
+                return jsonify({
+                    'success': False,
+                    'error': 'Không thể cập nhật phòng'
+                }), 500
             
             # GHI LOG THAY ĐỔI TRẠNG THÁI PHÒNG
             if old_status and new_status and old_status != new_status:
-                app.hk_logger.log_room_status_change(room_no, old_status, new_status, user_info.get('name', 'Unknown'))
+                app.hk_logger.log_room_status_change(
+                    room_no, 
+                    old_status, 
+                    new_status, 
+                    user_info.get('name', 'Unknown'),
+                    user_info.get('department', 'Unknown')
+                )
             
             logger.info(f"Room {room_no} updated by {user_info_str}")
             
@@ -508,10 +517,22 @@ def create_app():
                 new_status = f"{new_base_status}/arr"
             
             updated_data = {'roomStatus': new_status}
-            app.data_processor.update_room_data(room_no, updated_data, user_info_str)
+            success = app.data_processor.update_room_data(room_no, updated_data, user_info_str)
+            
+            if not success:
+                return jsonify({
+                    'success': False,
+                    'error': 'Không thể cập nhật phòng'
+                }), 500
             
             # GHI LOG THAY ĐỔI TRẠNG THÁI PHÒNG
-            app.hk_logger.log_room_status_change(room_no, old_status, new_status, user_info.get('name', 'Unknown'))
+            app.hk_logger.log_room_status_change(
+                room_no, 
+                old_status, 
+                new_status, 
+                user_info.get('name', 'Unknown'),
+                user_info.get('department', 'Unknown')
+            )
             
             logger.info(f"HK quick update: {room_no} from {old_status} to {new_status} by {user_info_str}")
             
@@ -547,11 +568,25 @@ def create_app():
     @app.route('/api/health')
     def health_check():
         """Health check endpoint"""
-        return jsonify({
-            'status': 'healthy',
-            'service': 'Hotel Management Dashboard API',
-            'timestamp': datetime.now().isoformat()
-        })
+        try:
+            # Test database connection
+            with app.db_manager.get_connection() as conn:
+                conn.execute("SELECT 1")
+            
+            return jsonify({
+                'status': 'healthy',
+                'service': 'Hotel Management Dashboard API',
+                'database': 'connected',
+                'timestamp': datetime.now().isoformat()
+            })
+        except Exception as e:
+            return jsonify({
+                'status': 'unhealthy',
+                'service': 'Hotel Management Dashboard API',
+                'database': 'disconnected',
+                'error': str(e),
+                'timestamp': datetime.now().isoformat()
+            }), 500
 
     # ==================== ERROR HANDLERS ====================
 
@@ -572,40 +607,46 @@ def create_app():
     # ==================== KHỞI TẠO DỮ LIỆU ====================
 
     def initialize_data():
-        if not os.path.exists(Config.ROOMS_JSON):
-            try:
-                logger.info("Khởi tạo dữ liệu lần đầu từ Google Sheets...")
-                app.data_processor.update_from_google_sheets('system_initialization')
-                logger.info("Khởi tạo dữ liệu thành công")
-            except Exception as e:
-                logger.error(f"Lỗi khởi tạo dữ liệu: {e}")
+        """Khởi tạo dữ liệu nếu database trống"""
+        try:
+            if app.db_manager.is_database_empty():
+                logger.info("🔄 Khởi tạo dữ liệu lần đầu từ Google Sheets...")
+                success = app.data_processor.initialize_rooms_from_google_sheets('system_initialization')
+                if success:
+                    logger.info("✅ Khởi tạo dữ liệu thành công")
+                else:
+                    logger.error("❌ Không thể khởi tạo dữ liệu từ Google Sheets")
+            else:
+                logger.info("✅ Database đã có dữ liệu, bỏ qua khởi tạo")
+        except Exception as e:
+            logger.error(f"❌ Lỗi khởi tạo dữ liệu: {e}")
 
     with app.app_context():
+        # Khởi tạo database tables nếu chưa tồn tại
+        app.db_manager.initialize_database()
+        
+        # Khởi tạo dữ liệu
         initialize_data()
 
     return app
 
+app = create_app()
+
 if __name__ == '__main__':
-    app = create_app()
-    
-    print("🚀 Dashboard Quản Lý Khách Sạn ĐÃ ĐƯỢC NÂNG CẤP...")
+    print("🚀 Dashboard Quản Lý Khách Sạn - POSTGRESQL EDITION")
+    print("=" * 50)
     print("🔐 Đăng nhập: http://localhost:5000/login")
     print("🏨 Dashboard: http://localhost:5000/")
-    print("📊 Dữ liệu được lưu tại: data/rooms.json")
-    print("📈 Log HK được lưu tại: data/hk_activity_log.json")
+    print("🗃️  Database: PostgreSQL (Render)")
     print("🎯 TÍNH NĂNG MỚI:")
-    print("   • Hệ thống chuyển đổi trạng thái thông minh")
-    print("   • ARR toggle: Bật/tắt thông tin khách sắp đến")
-    print("   • Tự động xóa thông tin khách sắp đến khi tắt ARR")
-    print("   • Phân quyền HK/FO chi tiết")
-    print("   • Báo cáo hoạt động HK từ 8h15 đến hiện tại")
-    print("   • Theo dõi lịch sử dọn phòng theo nhân viên")
-    print("   • Tích hợp ghi log tự động cho tất cả thao tác HK")
-    print("📄 In Tasksheet: http://localhost:5000/print-tasksheet (FO only)")
-    print("🔗 API Health: http://localhost:5000/api/health")
-    print("📋 API Báo cáo HK: http://localhost:5000/api/report/hk")
-    print("🔄 API Refresh (FO only): POST http://localhost:5000/api/refresh")
-    print("🗑️  API Clear Report (FO only): POST http://localhost:5000/api/report/hk/clear")
+    print("   • PostgreSQL Database - Dữ liệu persistent")
+    print("   • Không mất dữ liệu khi restart")
+    print("   • Auto backup bởi Render")
+    print("📊 CÁC API CHÍNH:")
+    print("   • Rooms: GET http://localhost:5000/api/rooms")
+    print("   • Refresh: POST http://localhost:5000/api/refresh")
+    print("   • HK Report: GET http://localhost:5000/api/report/hk")
+    print("=" * 50)
     
     app.run(
         host='0.0.0.0', 
