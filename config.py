@@ -13,7 +13,7 @@ class Config:
     if not DATABASE_URL:
         # Thông tin Supabase CỦA BẠN
         DB_HOST = 'aws-1-ap-south-1.pooler.supabase.com'
-        DB_PORT = '5432'
+        DB_PORT = '6543'
         DB_NAME = 'postgres'
         DB_USER = 'postgres.cbrscaaoifhtkktjpmiq'
         DB_PASSWORD = 'Thuyly0911@'  # ĐÃ MÃ HÓA @ thành %40 trong URL
@@ -33,13 +33,13 @@ class Config:
             DB_USER = parsed.username or 'unknown'
             DB_PASSWORD = password
             DB_HOST = parsed.hostname or 'unknown'
-            DB_PORT = str(parsed.port) if parsed.port else '5432'
+            DB_PORT = str(parsed.port) if parsed.port else '6543'
             DB_NAME = parsed.path[1:] if parsed.path else 'postgres'  # Bỏ '/' đầu tiên
             
         except Exception:
             # Fallback values nếu parse không thành công
             DB_HOST = 'unknown'
-            DB_PORT = '5432'
+            DB_PORT = '6543'
             DB_NAME = 'unknown'
             DB_USER = 'unknown'
             DB_PASSWORD = 'unknown'
