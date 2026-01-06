@@ -9,33 +9,43 @@ class Config:
     # Sử dụng DATABASE_URL từ environment variable
     DATABASE_URL = os.environ.get('DATABASE_URL')
     
-    # Các biến database sẽ được điền từ DATABASE_URL nếu có
-    DB_HOST = None
-    DB_PORT = None
-    DB_NAME = None
-    DB_USER = None
-    DB_PASSWORD = None  # Sẽ không decode, chỉ dùng để debug (ẩn)
-    
-    if DATABASE_URL:
+    # Nếu không có DATABASE_URL, sử dụng thông tin Supabase
+    if not DATABASE_URL:
+        # Thông tin Supabase
+        DB_HOST = 'aws-1-ap-south-1.pooler.supabase.com'
+        DB_PORT = '5432'
+        DB_NAME = 'postgres'
+        DB_USER = 'postgres.cbrscaaoifhtkktjpmiq'
+        DB_PASSWORD = 'Y1tDWxcbelREH0X1'  # MẬT KHẨU MỚI - không có ký tự đặc biệt
+        
+        # Xây dựng DATABASE_URL với password đã encode (nếu cần)
+        # Lưu ý: @ trong password cần được encode thành %40
+        if '@' in DB_PASSWORD:
+            encoded_password = DB_PASSWORD.replace('@', '%40')
+        else:
+            encoded_password = DB_PASSWORD
+        DATABASE_URL = f'postgresql://{DB_USER}:{encoded_password}@{DB_HOST}:{DB_PORT}/{DB_NAME}'
+    else:
+        # Parse DATABASE_URL từ environment variable
         try:
             parsed = urlparse(DATABASE_URL)
-            DB_USER = parsed.username
-            # Giữ nguyên password đã encode, không decode
-            DB_PASSWORD = parsed.password  # Đây là password đã encode
-            DB_HOST = parsed.hostname
-            DB_PORT = parsed.port if parsed.port else 5432
-            DB_NAME = parsed.path[1:] if parsed.path else 'postgres'
-        except Exception as e:
-            print(f"⚠️  Lỗi khi parse DATABASE_URL: {e}")
-    else:
-        # Nếu không có DATABASE_URL, in cảnh báo
-        print("⚠️  Không tìm thấy DATABASE_URL trong biến môi trường")
-        # Có thể set giá trị mặc định cho development, nhưng khuyến cáo dùng biến môi trường
-        # DB_HOST = 'localhost'
-        # DB_PORT = 5432
-        # DB_NAME = 'postgres'
-        # DB_USER = 'postgres'
-        # DB_PASSWORD = ''
+            
+            # Decode password (nếu có %40 chuyển lại thành @)
+            password = parsed.password.replace('%40', '@') if parsed.password else ''
+            
+            DB_USER = parsed.username or 'unknown'
+            DB_PASSWORD = password
+            DB_HOST = parsed.hostname or 'unknown'
+            DB_PORT = str(parsed.port) if parsed.port else '5432'
+            DB_NAME = parsed.path[1:] if parsed.path else 'postgres'  # Bỏ '/' đầu tiên
+            
+        except Exception:
+            # Fallback values nếu parse không thành công
+            DB_HOST = 'unknown'
+            DB_PORT = '5432'
+            DB_NAME = 'unknown'
+            DB_USER = 'unknown'
+            DB_PASSWORD = 'unknown'
     
     # ==================== GOOGLE SHEETS CONFIG ====================
     API_KEY = os.environ.get('API_KEY', 'AIzaSyCY5tu6rUE7USAnr0ALlhBAKlx-wmLYv6A')
@@ -79,8 +89,9 @@ class Config:
             'port': cls.DB_PORT,
             'database': cls.DB_NAME,
             'user': cls.DB_USER,
-            'password': '***' if cls.DB_PASSWORD else 'None',
-            'has_database_url': bool(cls.DATABASE_URL)
+            'password': '***' + cls.DB_PASSWORD[-4:] if cls.DB_PASSWORD and cls.DB_PASSWORD != 'unknown' else 'None',
+            'has_database_url': bool(os.environ.get('DATABASE_URL')),
+            'using_hardcoded_password': not bool(os.environ.get('DATABASE_URL'))  # Cảnh báo dùng mật khẩu cứng
         }
     
     @classmethod
@@ -98,29 +109,15 @@ class Config:
         print(f"🗃️  Database: {db_config['database']}@{db_config['host']}:{db_config['port']}")
         print(f"👤 DB User: {db_config['user']}")
         print(f"🔐 DB Auth: {db_config['password']}")
-        print(f"📡 Using DATABASE_URL: {db_config['has_database_url']}")
-        if cls.DATABASE_URL:
-            # Hiển thị DATABASE_URL với password ẩn
-            if '@' in cls.DATABASE_URL:
-                parts = cls.DATABASE_URL.split('@')
-                user_part = parts[0]
-                host_part = parts[1]
-                if ':' in user_part:
-                    scheme, rest = user_part.split('://', 1)
-                    if ':' in rest:
-                        username, _ = rest.split(':', 1)
-                        safe_url = f"{scheme}://{username}:***@{host_part}"
-                    else:
-                        safe_url = cls.DATABASE_URL
-                else:
-                    safe_url = cls.DATABASE_URL
-                print(f"🔗 DATABASE_URL: {safe_url}")
+        print(f"📡 Using DATABASE_URL from env: {db_config['has_database_url']}")
+        if db_config['using_hardcoded_password']:
+            print("⚠️  WARNING: Using hardcoded password in code!")
         
         # App info
         print(f"📊 Google Sheets: {cls.SPREADSHEET_ID}")
         print(f"📈 Google Sheets Range: {cls.RANGE_NAME}")
         print(f"🔑 Department Code: {cls.DEPARTMENT_CODE}")
-        print(f"📈 HK Report Start: {cls.HK_REPORT_START_HOUR:02d}:{cls.HK_REPORT_START_MINUTE:02d}")
+        print(f"📈 HK Report Start: {cls.HK_REPORT_START_HOUR:02d}:{cls.HK_REPORT_START_MINute:02d}")
         print(f"📝 Log Level: {cls.LOG_LEVEL}")
         
         if cls.is_render():
@@ -139,7 +136,15 @@ class Config:
         
         # Kiểm tra database configuration
         if not cls.DATABASE_URL:
-            warnings.append("⚠️  DATABASE_URL không được tìm thấy trong biến môi trường")
+            warnings.append("⚠️  DATABASE_URL không được tìm thấy, sử dụng fallback configuration")
+        
+        if cls.DB_PASSWORD == 'unknown':
+            warnings.append("⚠️  Không thể parse DATABASE_URL, kiểm tra định dạng")
+        
+        # CẢNH BÁO BẢO MẬT QUAN TRỌNG: mật khẩu cứng trong production
+        if cls.is_production() and not os.environ.get('DATABASE_URL'):
+            warnings.append("🚨 SECURITY RISK: Using hardcoded database password in production code!")
+            warnings.append("🚨 ACTION REQUIRED: Set DATABASE_URL environment variable on Render Dashboard")
         
         # Kiểm tra Google Sheets configuration
         if cls.API_KEY == 'AIzaSyCY5tu6rUE7USAnr0ALlhBAKlx-wmLYv6A':
@@ -199,17 +204,24 @@ if __name__ == '__main__':
             print(f"   {warning}")
     
     # Test database connection (chỉ khi chạy trực tiếp)
-    if Config.DATABASE_URL:
-        try:
-            from models.database import DatabaseManager
-            db = DatabaseManager(Config.DATABASE_URL)
-            health = db.health_check()
-            print(f"\n🏥 Database Health: {health['status']}")
-            if health['status'] == 'healthy':
-                print("✅ Database connection successful!")
-            else:
-                print(f"❌ Database issues: {health.get('error', 'Unknown error')}")
-        except Exception as e:
-            print(f"\n❌ Cannot test database connection: {e}")
-    else:
-        print("\n❌ Không có DATABASE_URL để test kết nối")
+    try:
+        from models.database import DatabaseManager
+        db = DatabaseManager(Config.DATABASE_URL)
+        health = db.health_check()
+        print(f"\n🏥 Database Health: {health['status']}")
+        if health['status'] == 'healthy':
+            print("✅ Database connection successful!")
+        else:
+            print(f"❌ Database issues: {health.get('error', 'Unknown error')}")
+    except Exception as e:
+        print(f"\n❌ Cannot test database connection: {e}")
+else:
+    # Khi import, chỉ in summary nếu debug mode
+    if Config.DEBUG:
+        Config.print_config_summary()
+        
+        warnings = Config.validate_config()
+        if warnings:
+            print("\n🔔 CONFIG WARNINGS:")
+            for warning in warnings:
+                print(f"   {warning}")
