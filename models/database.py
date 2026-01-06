@@ -69,7 +69,7 @@ class DatabaseManager:
             if parsed_url.port:
                 params['port'] = parsed_url.port
             else:
-                params['port'] = 6543  # PostgreSQL default port
+                params['port'] = 5432  # PostgreSQL default port
             
             # Thêm SSL mode cho production (Render PostgreSQL)
             if parsed_url.hostname and ('render.com' in parsed_url.hostname or 'amazonaws.com' in parsed_url.hostname):
