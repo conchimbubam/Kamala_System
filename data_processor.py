@@ -55,7 +55,7 @@ class DataProcessor:
                         # Xác định base status (loại bỏ /arr)
                         base_status = room_status.replace('/arr', '')
                         
-                        # KHÔNG tạo ghi chú từ pax - để notes rỗng
+                        # Notes mặc định là rỗng, không tạo từ pax
                         notes = ''
                         
                         cur.execute('''
@@ -73,12 +73,12 @@ class DataProcessor:
                             current_guest.get('name', ''),
                             check_in,
                             check_out,
-                            current_guest.get('pax', 0),
+                            current_guest.get('pax', 0),  # Lưu pax vào current_pax
                             new_guest.get('name', ''),
                             next_check_in,
                             next_check_out,
                             new_guest.get('pax', 0),
-                            notes  # Notes rỗng, không tạo từ pax
+                            notes  # Notes rỗng
                         ))
                     
                     # Ghi log sync
@@ -329,14 +329,6 @@ class DataProcessor:
                         # Lấy pax từ current_pax (không parse từ notes nữa)
                         pax = row_dict.get('current_pax', 0)
                         
-                        # Giữ logic parse từ notes cho tương thích với dữ liệu cũ
-                        if not pax and 'Pax:' in notes:
-                            try:
-                                pax_str = notes.split('Pax:')[1].strip().split()[0]
-                                pax = int(pax_str)
-                            except:
-                                pax = 0
-                        
                         # Xử lý ngày tháng từ PostgreSQL
                         check_in = row_dict.get('check_in')
                         check_out = row_dict.get('check_out')
@@ -424,14 +416,6 @@ class DataProcessor:
                         
                         # Lấy pax từ current_pax (không parse từ notes nữa)
                         pax = row_dict.get('current_pax', 0)
-                        
-                        # Giữ logic parse từ notes cho tương thích với dữ liệu cũ
-                        if not pax and 'Pax:' in notes:
-                            try:
-                                pax_str = notes.split('Pax:')[1].strip().split()[0]
-                                pax = int(pax_str)
-                            except:
-                                pax = 0
                         
                         # Xử lý ngày tháng từ PostgreSQL
                         check_in = row_dict.get('check_in')
@@ -635,14 +619,6 @@ class DataProcessor:
                         
                         # Lấy pax từ current_pax (không parse từ notes nữa)
                         pax = row_dict.get('current_pax', 0)
-                        
-                        # Giữ logic parse từ notes cho tương thích với dữ liệu cũ
-                        if not pax and 'Pax:' in notes:
-                            try:
-                                pax_str = notes.split('Pax:')[1].strip().split()[0]
-                                pax = int(pax_str)
-                            except:
-                                pax = 0
                         
                         floor = row_dict.get('room_no', '0')[0] if row_dict.get('room_no') else '0'
                         
