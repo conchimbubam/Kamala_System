@@ -2,7 +2,6 @@
 let currentEditingRoom = null;
 let currentRoomStatus = '';
 let originalRoomStatus = ''; // Lưu trạng thái ban đầu để so sánh
-let originalNote = ''; // Lưu ghi chú gốc để tracking
 
 // State transition mapping based on requirements
 const stateTransitions = {
@@ -92,7 +91,7 @@ function clearCurrentGuestInfo() {
     document.getElementById('edit-current-pax').value = 0;
 }
 
-// Show room edit modal - CẬP NHẬT ĐỂ LƯU TRẠNG THÁI GHI CHÚ CŨ
+// Show room edit modal
 function showRoomEditModal(roomNo) {
     const room = allRooms.find(r => r.roomNo === roomNo);
     if (!room) {
@@ -103,7 +102,6 @@ function showRoomEditModal(roomNo) {
     currentEditingRoom = roomNo;
     currentRoomStatus = room.roomStatus || '';
     originalRoomStatus = room.roomStatus || '';
-    originalNote = room.notes || ''; // Lưu ghi chú gốc để tracking
     
     // Parse current status for ARR
     const hasARR = currentRoomStatus.includes('/arr');
@@ -136,9 +134,6 @@ function showRoomEditModal(roomNo) {
         document.getElementById('edit-new-checkout').value = '';
         document.getElementById('edit-new-pax').value = 0;
     }
-    
-    // Room notes - KHÔNG reset khi mở modal
-    document.getElementById('room-notes').value = room.notes || '';
     
     // Set ARR toggle
     const arrToggle = document.getElementById('arr-toggle');
@@ -357,7 +352,7 @@ function logHKActivity(oldStatus, newStatus, roomNo) {
     }
 }
 
-// Save room changes - CẬP NHẬT ĐỂ GỬI GHI CHÚ
+// Save room changes
 async function saveRoomChanges() {
     if (!currentEditingRoom) {
         showToast('Không có phòng đang được chỉnh sửa', 'error');
@@ -375,7 +370,6 @@ async function saveRoomChanges() {
         // Get current values
         const baseStatus = getCurrentBaseStatus();
         const hasARR = document.getElementById('arr-toggle').checked;
-        const currentNote = document.getElementById('room-notes').value;
         
         // Determine final status
         let finalStatus = baseStatus;
@@ -388,12 +382,11 @@ async function saveRoomChanges() {
             logHKActivity(originalRoomStatus, finalStatus, currentEditingRoom);
         }
         
-        // Collect form data - THÊM GHI CHÚ
+        // Collect form data
         const formData = {
             roomNo: currentEditingRoom,
             updatedData: {
-                roomStatus: finalStatus,
-                notes: currentNote  // Gửi ghi chú hiện tại
+                roomStatus: finalStatus
             }
         };
         
@@ -450,16 +443,13 @@ async function saveRoomChanges() {
             const roomModal = bootstrap.Modal.getInstance(document.getElementById('roomModal'));
             roomModal.hide();
             
-            // Show success message - THÊM THÔNG BÁO VỀ GHI CHÚ
+            // Show success message
             let message = 'Thông tin phòng đã được cập nhật';
             if (hasARR) {
                 message += ' (có thông tin khách sắp đến)';
             }
             if (isVacantStatus(finalStatus)) {
                 message += ' (đã xóa thông tin khách hiện tại)';
-            }
-            if (originalNote !== currentNote) {
-                message += ' - Đã cập nhật ghi chú';
             }
             
             showToast(message, 'success');
