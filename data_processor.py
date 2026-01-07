@@ -55,16 +55,14 @@ class DataProcessor:
                         # Xác định base status (loại bỏ /arr)
                         base_status = room_status.replace('/arr', '')
                         
-                        # Notes mặc định là rỗng, không tạo từ pax
-                        notes = ''
+                        # LOẠI BỎ: Không tạo notes từ pax
                         
                         cur.execute('''
                             INSERT INTO rooms 
                             (room_no, room_type, room_status, arr_status, 
                              guest_name, check_in, check_out, current_pax,
-                             next_guest_name, next_check_in, next_check_out, next_pax,
-                             notes)
-                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                             next_guest_name, next_check_in, next_check_out, next_pax)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                         ''', (
                             room.get('roomNo', ''),
                             room.get('roomType', ''),  # Lấy từ Google Sheets
@@ -73,12 +71,11 @@ class DataProcessor:
                             current_guest.get('name', ''),
                             check_in,
                             check_out,
-                            current_guest.get('pax', 0),  # Lưu pax vào current_pax
+                            current_guest.get('pax', 0),
                             new_guest.get('name', ''),
                             next_check_in,
                             next_check_out,
-                            new_guest.get('pax', 0),
-                            notes  # Notes rỗng
+                            new_guest.get('pax', 0)
                         ))
                     
                     # Ghi log sync
@@ -302,7 +299,7 @@ class DataProcessor:
                         SELECT room_no, room_type, room_status, arr_status,
                                guest_name, check_in, check_out, current_pax,
                                next_guest_name, next_check_in, next_check_out, next_pax,
-                               notes, last_updated
+                               last_updated
                         FROM rooms 
                         ORDER BY room_no
                     ''')
@@ -323,10 +320,7 @@ class DataProcessor:
                         else:
                             final_status = room_status
                         
-                        # Lấy ghi chú
-                        notes = row_dict.get('notes', '') or ''
-                        
-                        # Lấy pax từ current_pax (không parse từ notes nữa)
+                        # Lấy pax từ current_pax
                         pax = row_dict.get('current_pax', 0)
                         
                         # Xử lý ngày tháng từ PostgreSQL
@@ -350,8 +344,7 @@ class DataProcessor:
                                 'checkIn': self.format_date_for_display(next_check_in),
                                 'checkOut': self.format_date_for_display(next_check_out),
                                 'pax': row_dict.get('next_pax', 0) or 0
-                            },
-                            'notes': notes
+                            }
                         })
                     
                     return {'success': True, 'data': rooms}
@@ -411,10 +404,7 @@ class DataProcessor:
                         else:
                             final_status = room_status
                         
-                        # Lấy ghi chú
-                        notes = row_dict.get('notes', '') or ''
-                        
-                        # Lấy pax từ current_pax (không parse từ notes nữa)
+                        # Lấy pax từ current_pax
                         pax = row_dict.get('current_pax', 0)
                         
                         # Xử lý ngày tháng từ PostgreSQL
@@ -439,7 +429,6 @@ class DataProcessor:
                                 'checkOut': self.format_date_for_display(next_check_out),
                                 'pax': row_dict.get('next_pax', 0) or 0
                             },
-                            'notes': notes,
                             'last_updated': row_dict.get('last_updated')
                         }
                     return None
@@ -503,7 +492,7 @@ class DataProcessor:
                         set_clause.append('check_out = %s')
                         params.append(check_out)
                         
-                        # Lưu pax vào current_pax (KHÔNG tạo notes từ pax)
+                        # Lưu pax vào current_pax
                         pax = guest_data.get('pax', 0)
                         set_clause.append('current_pax = %s')
                         params.append(pax)
@@ -534,10 +523,7 @@ class DataProcessor:
                         set_clause.append('room_type = %s')
                         params.append(updated_data['roomType'])
                     
-                    # Xử lý notes - chỉ cập nhật khi có trong updated_data
-                    if 'notes' in updated_data:
-                        set_clause.append('notes = %s')
-                        params.append(updated_data['notes'])
+                    # LOẠI BỎ: Không xử lý notes dưới bất kỳ hình thức nào
                     
                     if not set_clause:
                         return False
@@ -614,10 +600,7 @@ class DataProcessor:
                         else:
                             final_status = room_status
                         
-                        # Lấy ghi chú
-                        notes = row_dict.get('notes', '') or ''
-                        
-                        # Lấy pax từ current_pax (không parse từ notes nữa)
+                        # Lấy pax từ current_pax
                         pax = row_dict.get('current_pax', 0)
                         
                         floor = row_dict.get('room_no', '0')[0] if row_dict.get('room_no') else '0'
@@ -646,8 +629,7 @@ class DataProcessor:
                                 'checkIn': self.format_date_for_display(next_check_in),
                                 'checkOut': self.format_date_for_display(next_check_out),
                                 'pax': row_dict.get('next_pax', 0) or 0
-                            },
-                            'notes': notes
+                            }
                         })
                     
                     return floors
