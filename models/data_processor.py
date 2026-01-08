@@ -2,7 +2,7 @@
 import requests
 import logging
 import re
-from datetime import datetime
+from datetime import datetime, date, timedelta
 from config import Config
 
 logger = logging.getLogger(__name__)
@@ -41,12 +41,28 @@ class DataProcessor:
                         # Xử lý thông tin khách SẮP ĐẾN
                         new_guest = room.get('newGuest', {})
                         
-                        # Xử lý ngày tháng - chuyển đổi thành NULL nếu không hợp lệ
-                        check_in = self.parse_date_for_postgresql(current_guest.get('checkIn', ''))
-                        check_out = self.parse_date_for_postgresql(current_guest.get('checkOut', ''))
+                        # Xử lý ngày tháng với logic năm thông minh
+                        check_in = self.parse_date_with_year_logic(
+                            current_guest.get('checkIn', ''),
+                            current_guest.get('checkOut', ''),
+                            is_check_in=True
+                        )
+                        check_out = self.parse_date_with_year_logic(
+                            current_guest.get('checkOut', ''),
+                            current_guest.get('checkIn', ''),
+                            is_check_in=False
+                        )
                         
-                        next_check_in = self.parse_date_for_postgresql(new_guest.get('checkIn', ''))
-                        next_check_out = self.parse_date_for_postgresql(new_guest.get('checkOut', ''))
+                        next_check_in = self.parse_date_with_year_logic(
+                            new_guest.get('checkIn', ''),
+                            new_guest.get('checkOut', ''),
+                            is_check_in=True
+                        )
+                        next_check_out = self.parse_date_with_year_logic(
+                            new_guest.get('checkOut', ''),
+                            new_guest.get('checkIn', ''),
+                            is_check_in=False
+                        )
                         
                         # Xác định arr_status từ roomStatus
                         room_status = room.get('roomStatus', 'vc')
@@ -55,17 +71,14 @@ class DataProcessor:
                         # Xác định base status (loại bỏ /arr)
                         base_status = room_status.replace('/arr', '')
                         
-                        # Ghi chú từ pax của khách hiện tại
-                        current_pax = current_guest.get('pax', 0)
-                        notes = f"Pax: {current_pax}" if current_pax else ''
+                        # LOẠI BỎ: Không tạo notes từ pax
                         
                         cur.execute('''
                             INSERT INTO rooms 
                             (room_no, room_type, room_status, arr_status, 
                              guest_name, check_in, check_out, current_pax,
-                             next_guest_name, next_check_in, next_check_out, next_pax,
-                             notes)
-                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                             next_guest_name, next_check_in, next_check_out, next_pax)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                         ''', (
                             room.get('roomNo', ''),
                             room.get('roomType', ''),  # Lấy từ Google Sheets
@@ -74,12 +87,11 @@ class DataProcessor:
                             current_guest.get('name', ''),
                             check_in,
                             check_out,
-                            current_pax,
+                            current_guest.get('pax', 0),
                             new_guest.get('name', ''),
                             next_check_in,
                             next_check_out,
-                            new_guest.get('pax', 0),
-                            notes
+                            new_guest.get('pax', 0)
                         ))
                     
                     # Ghi log sync
@@ -107,6 +119,126 @@ class DataProcessor:
             
             return False
 
+    def parse_date_with_year_logic(self, date_str, reference_date_str, is_check_in=True):
+        """
+        Chuyển đổi định dạng ngày với logic năm thông minh
+        
+        Args:
+            date_str: Chuỗi ngày cần chuyển đổi (dd-mm hoặc dd-mm-yy)
+            reference_date_str: Chuỗi ngày tham chiếu (check-in hoặc check-out tương ứng)
+            is_check_in: True nếu là ngày check-in, False nếu là ngày check-out
+        
+        Returns:
+            Chuỗi ngày định dạng YYYY-MM-DD hoặc None
+        """
+        if not date_str or date_str.strip() == '' or date_str == '00-01-00':
+            return None
+        
+        date_str = str(date_str).strip()
+        
+        try:
+            # Xác định ngày hiện tại
+            current_date = datetime.now()
+            current_year = current_date.year
+            
+            # Phân tích ngày từ chuỗi
+            day, month, year = self._extract_date_components(date_str)
+            
+            # Nếu không có năm, mặc định là năm hiện tại
+            if year is None:
+                year = current_year
+            
+            # Tạo ngày cơ bản
+            try:
+                main_date = datetime(year, month, day)
+            except ValueError:
+                logger.warning(f"Ngày không hợp lệ: {date_str}")
+                return None
+            
+            # Nếu có ngày tham chiếu, áp dụng logic năm
+            if reference_date_str and reference_date_str.strip() != '' and reference_date_str != '00-01-00':
+                ref_day, ref_month, ref_year = self._extract_date_components(reference_date_str)
+                
+                if ref_day and ref_month:
+                    # Nếu năm tham chiếu không có, dùng năm hiện tại
+                    if ref_year is None:
+                        ref_year = current_year
+                    
+                    try:
+                        ref_date = datetime(ref_year, ref_month, ref_day)
+                    except ValueError:
+                        # Nếu không tạo được ngày tham chiếu, trả về ngày chính không xử lý
+                        return main_date.strftime('%Y-%m-%d')
+                    
+                    # Áp dụng logic năm:
+                    # - Nếu là check-in và ngày check-in > ngày check-out: check-in năm trước
+                    # - Nếu là check-out và ngày check-out < ngày check-in: check-out năm sau
+                    if is_check_in:
+                        # Chỉ so sánh tháng/ngày, bỏ qua năm
+                        main_month_day = (main_date.month, main_date.day)
+                        ref_month_day = (ref_date.month, ref_date.day)
+                        
+                        if main_month_day > ref_month_day:
+                            # Check-in muộn hơn check-out trong cùng năm => check-in năm trước
+                            main_date = datetime(year - 1, month, day)
+                    else:
+                        # Chỉ so sánh tháng/ngày, bỏ qua năm
+                        main_month_day = (main_date.month, main_date.day)
+                        ref_month_day = (ref_date.month, ref_date.day)
+                        
+                        if main_month_day < ref_month_day:
+                            # Check-out sớm hơn check-in trong cùng năm => check-out năm sau
+                            main_date = datetime(year + 1, month, day)
+            
+            return main_date.strftime('%Y-%m-%d')
+            
+        except Exception as e:
+            logger.warning(f"Lỗi phân tích ngày tháng với logic năm: {date_str}, Error: {e}")
+            return None
+
+    def _extract_date_components(self, date_str):
+        """
+        Trích xuất ngày, tháng, năm từ chuỗi
+        
+        Returns:
+            tuple: (day, month, year) hoặc (None, None, None) nếu lỗi
+        """
+        if not date_str:
+            return (None, None, None)
+        
+        date_str = str(date_str).strip()
+        
+        # Các pattern phổ biến
+        patterns = [
+            r'(\d{1,2})[/-](\d{1,2})[/-](\d{4})',  # dd-mm-yyyy
+            r'(\d{1,2})[/-](\d{1,2})[/-](\d{2})',  # dd-mm-yy
+            r'(\d{1,2})[/-](\d{1,2})',             # dd-mm (chỉ có ngày tháng)
+        ]
+        
+        for pattern in patterns:
+            match = re.search(pattern, date_str)
+            if match:
+                groups = match.groups()
+                day = int(groups[0])
+                month = int(groups[1])
+                
+                # Xử lý năm
+                if len(groups) >= 3:
+                    year_str = groups[2]
+                    if len(year_str) == 2:
+                        # Giả định là năm 2000+
+                        year = 2000 + int(year_str)
+                    elif len(year_str) == 4:
+                        year = int(year_str)
+                    else:
+                        year = None
+                else:
+                    year = None  # Chỉ có dd-mm
+                
+                return (day, month, year)
+        
+        return (None, None, None)
+
     def parse_date_for_postgresql(self, date_str):
         """Chuyển đổi định dạng ngày cho PostgreSQL - trả về NULL nếu không hợp lệ"""
         if not date_str or date_str.strip() == '' or date_str == '00-01-00':
@@ -115,34 +247,20 @@ class DataProcessor:
         date_str = str(date_str).strip()
         
         try:
-            patterns = [
-                r'(\d{1,2})[/-](\d{1,2})[/-](\d{4})',
-                r'(\d{1,2})[/-](\d{1,2})[/-](\d{2})',
-                r'(\d{1,2})[/-](\d{1,2})[/-](\d{1,2})',
-            ]
+            # Sử dụng hàm _extract_date_components mới
+            day, month, year = self._extract_date_components(date_str)
             
-            for pattern in patterns:
-                match = re.search(pattern, date_str)
-                if match:
-                    day, month, year = match.groups()
-                    
-                    # Xử lý năm
-                    if len(year) == 2:
-                        year = f"20{year}"  # Giả định là năm 2000+
-                    elif len(year) == 4:
-                        pass  # Giữ nguyên
-                    else:
-                        return None
-                    
-                    # Chuyển đổi thành định dạng PostgreSQL DATE
-                    try:
-                        # Tạo đối tượng datetime để validate
-                        date_obj = datetime(int(year), int(month), int(day))
-                        return date_obj.strftime('%Y-%m-%d')
-                    except ValueError:
-                        return None
+            if day is None or month is None:
+                return None
             
-            return None
+            # Nếu không có năm, dùng năm hiện tại
+            if year is None:
+                year = datetime.now().year
+            
+            # Tạo và validate ngày
+            date_obj = datetime(year, month, day)
+            return date_obj.strftime('%Y-%m-%d')
+            
         except Exception as e:
             logger.warning(f"Lỗi phân tích ngày tháng: {date_str}, Error: {e}")
             return None
@@ -190,26 +308,23 @@ class DataProcessor:
         date_str = str(date_str).strip()
         
         try:
-            patterns = [
-                r'(\d{1,2})[/-](\d{1,2})[/-](\d{4})',
-                r'(\d{1,2})[/-](\d{1,2})[/-](\d{2})',
-            ]
+            # Sử dụng hàm _extract_date_components mới
+            day, month, year = self._extract_date_components(date_str)
             
-            for pattern in patterns:
-                match = re.search(pattern, date_str)
-                if match:
-                    day, month, year = match.groups()
-                    
-                    if len(year) == 4:
-                        year = year[2:]
-                    
-                    day = day.zfill(2)
-                    month = month.zfill(2)
-                    year = year.zfill(2)
-                    
-                    return f"{day}-{month}-{year}"
+            if day is None or month is None:
+                return '00-01-00'
             
-            return '00-01-00'
+            # Nếu không có năm, dùng năm hiện tại
+            if year is None:
+                year = datetime.now().year
+            
+            # Format thành dd-mm-yy
+            day_str = str(day).zfill(2)
+            month_str = str(month).zfill(2)
+            year_str = str(year)[-2:]  # Lấy 2 số cuối của năm
+            
+            return f"{day_str}-{month_str}-{year_str}"
+            
         except Exception as e:
             logger.warning(f"Lỗi phân tích ngày tháng: {date_str}, Error: {e}")
             return '00-01-00'
@@ -303,7 +418,7 @@ class DataProcessor:
                         SELECT room_no, room_type, room_status, arr_status,
                                guest_name, check_in, check_out, current_pax,
                                next_guest_name, next_check_in, next_check_out, next_pax,
-                               notes, last_updated
+                               last_updated
                         FROM rooms 
                         ORDER BY room_no
                     ''')
@@ -324,17 +439,8 @@ class DataProcessor:
                         else:
                             final_status = room_status
                         
-                        # Lấy ghi chú
-                        notes = row_dict.get('notes', '') or ''
-                        
-                        # Lấy pax từ notes hoặc từ current_pax
+                        # Lấy pax từ current_pax
                         pax = row_dict.get('current_pax', 0)
-                        if not pax and 'Pax:' in notes:
-                            try:
-                                pax_str = notes.split('Pax:')[1].strip().split()[0]
-                                pax = int(pax_str)
-                            except:
-                                pax = 0
                         
                         # Xử lý ngày tháng từ PostgreSQL
                         check_in = row_dict.get('check_in')
@@ -357,8 +463,7 @@ class DataProcessor:
                                 'checkIn': self.format_date_for_display(next_check_in),
                                 'checkOut': self.format_date_for_display(next_check_out),
                                 'pax': row_dict.get('next_pax', 0) or 0
-                            },
-                            'notes': notes
+                            }
                         })
                     
                     return {'success': True, 'data': rooms}
@@ -387,6 +492,10 @@ class DataProcessor:
             
             # Nếu là datetime object, format lại
             if isinstance(date_value, datetime):
+                return date_value.strftime('%d-%m-%y')
+            
+            # Nếu là date object
+            if isinstance(date_value, date):
                 return date_value.strftime('%d-%m-%y')
             
             return str(date_value)
@@ -418,17 +527,8 @@ class DataProcessor:
                         else:
                             final_status = room_status
                         
-                        # Lấy ghi chú
-                        notes = row_dict.get('notes', '') or ''
-                        
-                        # Lấy pax từ notes hoặc từ current_pax
+                        # Lấy pax từ current_pax
                         pax = row_dict.get('current_pax', 0)
-                        if not pax and 'Pax:' in notes:
-                            try:
-                                pax_str = notes.split('Pax:')[1].strip().split()[0]
-                                pax = int(pax_str)
-                            except:
-                                pax = 0
                         
                         # Xử lý ngày tháng từ PostgreSQL
                         check_in = row_dict.get('check_in')
@@ -452,7 +552,6 @@ class DataProcessor:
                                 'checkOut': self.format_date_for_display(next_check_out),
                                 'pax': row_dict.get('next_pax', 0) or 0
                             },
-                            'notes': notes,
                             'last_updated': row_dict.get('last_updated')
                         }
                     return None
@@ -477,6 +576,8 @@ class DataProcessor:
                     
                     if not current_row:
                         return False
+                    
+                    current_data = dict(zip(columns, current_row))
                     
                     # Build dynamic update query
                     set_clause = []
@@ -506,9 +607,17 @@ class DataProcessor:
                         set_clause.append('guest_name = %s')
                         params.append(guest_data.get('name', ''))
                         
-                        # Xử lý ngày tháng cho PostgreSQL
-                        check_in = self.parse_date_for_postgresql(guest_data.get('checkIn', ''))
-                        check_out = self.parse_date_for_postgresql(guest_data.get('checkOut', ''))
+                        # Xử lý ngày tháng với logic năm
+                        check_in = self.parse_date_with_year_logic(
+                            guest_data.get('checkIn', ''),
+                            guest_data.get('checkOut', ''),
+                            is_check_in=True
+                        )
+                        check_out = self.parse_date_with_year_logic(
+                            guest_data.get('checkOut', ''),
+                            guest_data.get('checkIn', ''),
+                            is_check_in=False
+                        )
                         
                         set_clause.append('check_in = %s')
                         params.append(check_in)
@@ -520,11 +629,6 @@ class DataProcessor:
                         pax = guest_data.get('pax', 0)
                         set_clause.append('current_pax = %s')
                         params.append(pax)
-                        
-                        # Cập nhật notes với Pax
-                        notes = f"Pax: {pax}" if pax else ''
-                        set_clause.append('notes = %s')
-                        params.append(notes)
                     
                     # Xử lý khách sắp đến (NEW GUEST) - QUAN TRỌNG!
                     if 'newGuest' in updated_data:
@@ -532,9 +636,17 @@ class DataProcessor:
                         set_clause.append('next_guest_name = %s')
                         params.append(new_guest_data.get('name', ''))
                         
-                        # Xử lý ngày tháng cho PostgreSQL
-                        next_check_in = self.parse_date_for_postgresql(new_guest_data.get('checkIn', ''))
-                        next_check_out = self.parse_date_for_postgresql(new_guest_data.get('checkOut', ''))
+                        # Xử lý ngày tháng với logic năm
+                        next_check_in = self.parse_date_with_year_logic(
+                            new_guest_data.get('checkIn', ''),
+                            new_guest_data.get('checkOut', ''),
+                            is_check_in=True
+                        )
+                        next_check_out = self.parse_date_with_year_logic(
+                            new_guest_data.get('checkOut', ''),
+                            new_guest_data.get('checkIn', ''),
+                            is_check_in=False
+                        )
                         
                         set_clause.append('next_check_in = %s')
                         params.append(next_check_in)
@@ -552,11 +664,7 @@ class DataProcessor:
                         set_clause.append('room_type = %s')
                         params.append(updated_data['roomType'])
                     
-                    # Xử lý notes riêng nếu có (ghi đè notes từ pax nếu cần)
-                    if 'notes' in updated_data and updated_data['notes']:
-                        # Nếu có ghi chú mới, ghi đè notes cũ
-                        set_clause.append('notes = %s')
-                        params.append(updated_data['notes'])
+                    # LOẠI BỎ: Không xử lý notes dưới bất kỳ hình thức nào
                     
                     if not set_clause:
                         return False
@@ -633,17 +741,8 @@ class DataProcessor:
                         else:
                             final_status = room_status
                         
-                        # Lấy ghi chú
-                        notes = row_dict.get('notes', '') or ''
-                        
-                        # Lấy pax từ notes hoặc từ current_pax
+                        # Lấy pax từ current_pax
                         pax = row_dict.get('current_pax', 0)
-                        if not pax and 'Pax:' in notes:
-                            try:
-                                pax_str = notes.split('Pax:')[1].strip().split()[0]
-                                pax = int(pax_str)
-                            except:
-                                pax = 0
                         
                         floor = row_dict.get('room_no', '0')[0] if row_dict.get('room_no') else '0'
                         
@@ -671,8 +770,7 @@ class DataProcessor:
                                 'checkIn': self.format_date_for_display(next_check_in),
                                 'checkOut': self.format_date_for_display(next_check_out),
                                 'pax': row_dict.get('next_pax', 0) or 0
-                            },
-                            'notes': notes
+                            }
                         })
                     
                     return floors
