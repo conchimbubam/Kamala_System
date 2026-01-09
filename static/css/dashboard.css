@@ -15,11 +15,11 @@
     
     /* Màu theme sang trọng mới */
     --primary-color: #3C3D47;
-    --secondary-color: #F96E5B;
+    --secondary-color: #F8F4EC;
     --accent-color: #FF0075;
-    --light-bg: #F8F4EC;
+    --light-bg: #ffffff;
     --card-bg: #ffffff;
-    --border-color: #F96E5B;
+    --border-color: #F8F4EC;
     --text-primary: #1B211A;
     --text-secondary: #547792;
 }
