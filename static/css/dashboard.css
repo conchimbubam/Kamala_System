@@ -1,4 +1,5 @@
 :root {
+    /* Màu trạng thái phòng (solid) */
     --vd-color: #6c757d;
     --vc-color: #ffffff;
     --vd-arr-color: #6c757d;
@@ -12,59 +13,61 @@
     --lock-color: #dc3545;
     --ip-color: #28a745;
     
-    /* Màu mới với theme đại dương */
-    --primary-color: #0a4a6c;
-    --secondary-color: #1c7c96;
-    --accent-color: #2a9d8f;
-    --light-bg: #e6f2ff;
+    /* Màu theme sang trọng mới */
+    --primary-color: #3C3D47;
+    --secondary-color: #F96E5B;
+    --accent-color: #FF0075;
+    --light-bg: #F8F4EC;
     --card-bg: #ffffff;
-    --border-color: #c2e0ff;
-    --text-primary: #1a3c5c;
-    --text-secondary: #4a6f8a;
+    --border-color: #F96E5B;
+    --text-primary: #1B211A;
+    --text-secondary: #547792;
 }
 
 body {
-    background: linear-gradient(135deg, var(--light-bg) 0%, #d1e8ff 100%);
+    background-color: var(--light-bg);
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     line-height: 1.6;
     color: var(--text-primary);
     min-height: 100vh;
 }
 
-/* Navigation */
+/* Navigation - Thiết kế sang trọng */
 .navbar {
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%) !important;
-    box-shadow: 0 4px 12px rgba(10, 74, 108, 0.15);
+    background-color: var(--primary-color) !important;
+    box-shadow: 0 4px 12px rgba(28, 53, 45, 0.15);
     padding: 12px 0;
+    border-bottom: 3px solid var(--secondary-color);
 }
 
 .navbar-brand {
     font-weight: 700;
     font-size: 1.5rem;
-    color: white !important;
+    color: #F9F6F3 !important;
+    letter-spacing: 0.5px;
 }
 
 .navbar-text .text-light {
     font-weight: 500;
+    color: #F9F6F3 !important;
 }
 
-/* Statistics Cards - Cải thiện với theme đại dương */
+/* Statistics Cards - Thiết kế tinh tế */
 .stats-container {
-    background: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(10px);
-    border-radius: 16px;
+    background-color: var(--card-bg);
+    border-radius: 12px;
     padding: 20px;
     margin-bottom: 25px;
-    box-shadow: 0 8px 20px rgba(10, 74, 108, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 4px 8px rgba(28, 53, 45, 0.08);
+    border: 1px solid var(--border-color);
 }
 
 .stat-card {
-    border-radius: 12px;
-    background: linear-gradient(135deg, var(--card-bg) 0%, #f5fbff 100%);
+    border-radius: 10px;
+    background-color: var(--light-bg);
     color: var(--text-primary) !important;
     transition: all 0.3s ease;
-    box-shadow: 0 4px 8px rgba(10, 74, 108, 0.08);
+    box-shadow: 0 2px 4px rgba(28, 53, 45, 0.05);
     border: 1px solid var(--border-color);
     padding: 15px;
     text-align: center;
@@ -72,8 +75,9 @@ body {
 }
 
 .stat-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 20px rgba(10, 74, 108, 0.15);
+    transform: translateY(-3px);
+    box-shadow: 0 6px 12px rgba(28, 53, 45, 0.1);
+    border-color: var(--secondary-color);
 }
 
 .stat-number {
@@ -88,42 +92,44 @@ body {
     color: var(--text-secondary);
     margin-bottom: 0;
     font-weight: 500;
+    letter-spacing: 0.3px;
 }
 
-/* Room Card Styles - Gradient cho các trạng thái */
+/* Room Card Styles - Solid Colors */
 .room-card {
-    border-radius: 12px;
+    border-radius: 10px;
     padding: 15px;
     margin-bottom: 15px;
     cursor: pointer;
     transition: all 0.3s ease;
     min-height: 120px;
     position: relative;
-    box-shadow: 0 4px 8px rgba(10, 74, 108, 0.08);
+    box-shadow: 0 2px 4px rgba(28, 53, 45, 0.08);
     display: flex;
     flex-direction: column;
     justify-content: space-between;
+    border: 1px solid transparent;
 }
 
 .room-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 20px rgba(10, 74, 108, 0.15);
+    transform: translateY(-3px);
+    box-shadow: 0 6px 12px rgba(28, 53, 45, 0.12);
 }
 
-/* Room status styles với gradient */
+/* Room status styles với màu solid */
 .room-status-vd {
-    background: linear-gradient(135deg, var(--vd-color) 0%, #8e9eab 100%);
+    background-color: var(--vd-color);
     color: white;
 }
 
 .room-status-vc {
-    background: linear-gradient(135deg, var(--vc-color) 0%, #f5f5f5 100%);
+    background-color: var(--vc-color);
     color: var(--text-primary);
     border: 1px solid var(--border-color);
 }
 
 .room-status-vd-arr {
-    background: linear-gradient(135deg, var(--vd-arr-color) 0%, #8e9eab 100%);
+    background-color: var(--vd-arr-color);
     color: white;
     position: relative;
 }
@@ -133,26 +139,25 @@ body {
     position: absolute;
     top: 10px;
     right: 10px;
-    background: linear-gradient(135deg, #2196F3 0%, #21CBF3 100%);
+    background-color: #2196F3;
     color: white;
     width: auto;
-    padding: 3px 8px;
+    padding: 3px 10px;
     height: auto;
     border-radius: 15px;
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: bold;
-    font-size: 10px;
+    font-size: 11px;
     border: 1px solid rgba(255, 255, 255, 0.5);
-    box-shadow: 0 2px 8px rgba(33, 150, 243, 0.4);
-    animation: blinkBlue 1s infinite, pulseBlue 2s infinite;
+    animation: blinkBlue 1.5s infinite;
     text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
     letter-spacing: 0.5px;
 }
 
 .room-status-vc-arr {
-    background: linear-gradient(135deg, var(--vc-arr-color) 0%, #f5f5f5 100%);
+    background-color: var(--vc-arr-color);
     color: var(--text-primary);
     border: 1px solid var(--border-color);
     position: relative;
@@ -163,26 +168,25 @@ body {
     position: absolute;
     top: 10px;
     right: 10px;
-    background: linear-gradient(135deg, #2196F3 0%, #21CBF3 100%);
+    background-color: #2196F3;
     color: white;
     width: auto;
-    padding: 3px 8px;
+    padding: 3px 10px;
     height: auto;
     border-radius: 15px;
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: bold;
-    font-size: 10px;
+    font-size: 11px;
     border: 1px solid rgba(255, 255, 255, 0.5);
-    box-shadow: 0 2px 8px rgba(33, 150, 243, 0.4);
-    animation: blinkBlue 1s infinite, pulseBlue 2s infinite;
+    animation: blinkBlue 1.5s infinite;
     text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
     letter-spacing: 0.5px;
 }
 
 .room-status-do-arr {
-    background: linear-gradient(135deg, var(--do-arr-color) 0%, #ffd54f 100%);
+    background-color: var(--do-arr-color);
     color: #b52a00;
     font-weight: bold;
     position: relative;
@@ -193,48 +197,41 @@ body {
     position: absolute;
     top: 10px;
     right: 10px;
-    background: linear-gradient(135deg, #2196F3 0%, #21CBF3 100%);
+    background-color: #2196F3;
     color: white;
     width: auto;
-    padding: 3px 8px;
+    padding: 3px 10px;
     height: auto;
     border-radius: 15px;
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: bold;
-    font-size: 10px;
+    font-size: 11px;
     border: 1px solid rgba(255, 255, 255, 0.5);
-    box-shadow: 0 2px 8px rgba(33, 150, 243, 0.4);
-    animation: blinkBlue 1s infinite, pulseBlue 2s infinite;
+    animation: blinkBlue 1.5s infinite;
     text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
     letter-spacing: 0.5px;
 }
 
 .room-status-do {
-    background: linear-gradient(135deg, var(--do-color) 0%, #ffd54f 100%);
-    color: #b52a00;
-    font-weight: bold;
-}
-
-.room-status-do {
-    background: linear-gradient(135deg, var(--do-color) 0%, #ffd54f 100%);
+    background-color: var(--do-color);
     color: #b52a00;
     font-weight: bold;
 }
 
 .room-status-od {
-    background: linear-gradient(135deg, var(--od-color) 0%, #424242 100%);
+    background-color: var(--od-color);
     color: white;
 }
 
 .room-status-oc {
-    background: linear-gradient(135deg, var(--oc-color) 0%, #ffd54f 100%);
+    background-color: var(--oc-color);
     color: var(--text-primary);
 }
 
 .room-status-dnd, .room-status-nn {
-    background: linear-gradient(135deg, var(--dnd-color) 0%, #ffd54f 100%);
+    background-color: var(--dnd-color);
     color: var(--text-primary);
     position: relative;
 }
@@ -249,12 +246,12 @@ body {
 }
 
 .room-status-lock {
-    background: linear-gradient(135deg, var(--lock-color) 0%, #f44336 100%);
+    background-color: var(--lock-color);
     color: white;
 }
 
 .room-status-ip {
-    background: linear-gradient(135deg, var(--ip-color) 0%, #66bb6a 100%);
+    background-color: var(--ip-color);
     color: var(--text-primary);
 }
 
@@ -292,12 +289,11 @@ body {
 
 .floor-section {
     margin-bottom: 30px;
-    background: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(10px);
-    border-radius: 16px;
+    background-color: var(--card-bg);
+    border-radius: 12px;
     padding: 25px;
-    box-shadow: 0 8px 20px rgba(10, 74, 108, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 4px 8px rgba(28, 53, 45, 0.08);
+    border: 2px solid var(--border-color);
 }
 
 .floor-title {
@@ -305,7 +301,7 @@ body {
     font-weight: 700;
     margin-bottom: 20px;
     padding-bottom: 12px;
-    border-bottom: 3px solid var(--accent-color);
+    border-bottom: 5px solid var(--secondary-color);
     color: var(--primary-color);
     display: flex;
     align-items: center;
@@ -317,15 +313,14 @@ body {
     font-size: 26px;
 }
 
-/* Filter Buttons */
+/* Filter Buttons - Thiết kế tinh tế */
 .filter-section {
-    background: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(10px);
-    border-radius: 16px;
+    background-color: var(--card-bg);
+    border-radius: 12px;
     padding: 20px;
     margin-bottom: 25px;
-    box-shadow: 0 8px 20px rgba(10, 74, 108, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 4px 8px rgba(28, 53, 45, 0.08);
+    border: 1px solid var(--border-color);
 }
 
 .filter-buttons .btn {
@@ -333,22 +328,22 @@ body {
     margin: 0 5px 5px 0;
     font-weight: 500;
     transition: all 0.3s ease;
-    background: rgba(255, 255, 255, 0.7);
+    background-color: var(--light-bg);
     border: 1px solid var(--border-color);
     color: var(--text-secondary);
 }
 
 .filter-buttons .btn:hover {
-    background: rgba(28, 124, 150, 0.1);
+    background-color: var(--secondary-color);
     border-color: var(--secondary-color);
-    color: var(--secondary-color);
+    color: var(--primary-color);
 }
 
 .filter-buttons .btn.active {
-    background: linear-gradient(135deg, var(--secondary-color) 0%, var(--accent-color) 100%);
-    border-color: var(--secondary-color);
-    color: white;
-    box-shadow: 0 4px 8px rgba(28, 124, 150, 0.3);
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: #F9F6F3;
+    box-shadow: 0 4px 8px rgba(28, 53, 45, 0.15);
 }
 
 /* Loading Animation */
@@ -365,6 +360,18 @@ body {
 
 .room-card {
     animation: fadeInUp 0.5s ease;
+}
+
+/* Animation cho ARR */
+@keyframes blinkBlue {
+    0%, 100% { 
+        opacity: 1; 
+        background-color: #2196F3;
+    }
+    50% { 
+        opacity: 0.8; 
+        background-color: #1976D2;
+    }
 }
 
 /* Responsive */
@@ -401,13 +408,15 @@ body {
     font-size: 12px;
     padding: 4px 8px;
     border-radius: 12px;
-    background: linear-gradient(135deg, var(--accent-color) 0%, var(--secondary-color) 100%);
-    color: white;
+    background-color: var(--secondary-color);
+    color: var(--primary-color);
+    font-weight: 600;
 }
 
 /* User info in navbar */
 .navbar-text .text-light small {
     font-size: 14px;
+    color: #F5C9B0 !important;
 }
 
 /* Responsive user info */
@@ -427,12 +436,11 @@ body {
 /* File Info Styles */
 #file-info {
     font-size: 14px;
-    background: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(10px);
+    background-color: var(--card-bg);
     border-radius: 10px;
     padding: 10px 15px;
     margin-top: 15px;
-    border: 1px solid rgba(255, 255, 255, 0.4);
+    border: 1px solid var(--card-bg);
     color: var(--text-secondary);
 }
 
@@ -442,29 +450,19 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-    background: rgba(230, 242, 255, 0.5);
+    background-color: #F9F6F3;
     border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb {
-    background: linear-gradient(135deg, var(--secondary-color) 0%, var(--accent-color) 100%);
+    background-color: var(--secondary-color);
     border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+    background-color: var(--primary-color);
 }
-/* Thêm animation mới cho hiệu ứng nhấp nháy màu xanh */
-@keyframes blinkBlue {
-    0%, 100% { 
-        opacity: 1; 
-        background: linear-gradient(135deg, #2196F3 0%, #21CBF3 100%);
-    }
-    50% { 
-        opacity: 0.7; 
-        background: linear-gradient(135deg, #1976D2 0%, #00B0FF 100%);
-    }
-}
+
 /* HK Report Styles */
 .staff-stats-container {
     max-height: 300px;
@@ -493,13 +491,14 @@ body {
 
 /* Table styles for report */
 .table th {
-    background-color: #f8f9fa;
-    border-bottom: 2px solid #dee2e6;
+    background-color: var(--light-bg);
+    border-bottom: 2px solid var(--border-color);
     font-weight: 600;
+    color: var(--primary-color);
 }
 
 .table-hover tbody tr:hover {
-    background-color: rgba(0, 123, 255, 0.075);
+    background-color: rgba(166, 178, 139, 0.1);
 }
 
 /* Badge styles */
@@ -519,7 +518,7 @@ body {
     width: 1rem;
     height: 1rem;
     border: 2px solid #f3f3f3;
-    border-top: 2px solid #3498db;
+    border-top: 2px solid var(--primary-color);
     border-radius: 50%;
     animation: spin 1s linear infinite;
 }
@@ -528,26 +527,54 @@ body {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
+
 /* Điều chỉnh menu tác vụ */
 .dropdown-menu {
-    background-color: #17a2b8 !important;
-    border: none;
+    background-color: var(--primary-color) !important;
+    border: 1px solid var(--secondary-color);
 }
 
 .dropdown-item {
-    color: white !important;
+    color: #F9F6F3 !important;
     transition: all 0.3s ease;
 }
 
 .dropdown-item:hover {
-    background-color: #138496 !important;
-    color: white !important;
+    background-color: var(--secondary-color) !important;
+    color: var(--primary-color) !important;
 }
 
 .dropdown-item i {
-    color: white !important;
+    color: inherit !important;
 }
 
 .dropdown-divider {
-    border-top-color: rgba(255, 255, 255, 0.3) !important;
+    border-top-color: var(--secondary-color) !important;
+}
+
+/* Cải thiện hiển thị chữ trên các thẻ màu tối */
+.room-status-vd .room-number,
+.room-status-vd-arr .room-number,
+.room-status-od .room-number,
+.room-status-lock .room-number {
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* Tinh chỉnh màu sắc cho theme */
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-primary:hover {
+    background-color: #15241e;
+    border-color: #15241e;
+}
+
+.text-accent {
+    color: var(--accent-color);
+}
+
+.bg-accent {
+    background-color: var(--accent-color);
 }
