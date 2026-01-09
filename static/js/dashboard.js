@@ -83,24 +83,6 @@ function updateFileInfo(fileInfo) {
     `;
 }
 
-// Calculate floor statistics
-function calculateFloorStats(rooms) {
-    const stats = {
-        'vd': 0, 'od': 0, 'vc': 0, 'oc': 0, 
-        'vd/arr': 0, 'vc/arr': 0, 'dnd': 0, 'nn': 0, 
-        'lock': 0, 'ip': 0, 'do': 0, 'do/arr': 0
-    };
-    
-    rooms.forEach(room => {
-        const status = room.roomStatus;
-        if (status in stats) {
-            stats[status]++;
-        }
-    });
-    
-    return stats;
-}
-
 // Update filter counts với logic mới
 function updateFilterCounts(rooms) {
     const counts = {
@@ -156,7 +138,7 @@ function updateFilterCounts(rooms) {
     });
 }
 
-// Display rooms by floor với thống kê từng tầng
+// Display rooms by floor - ĐÃ LOẠI BỎ THỐNG KÊ TỪNG TẦNG
 function displayRoomsByFloor(rooms) {
     const container = document.getElementById('floors-container');
     
@@ -175,8 +157,6 @@ function displayRoomsByFloor(rooms) {
     
     container.innerHTML = sortedFloors.map(floor => {
         const floorRooms = floors[floor];
-        const floorStats = calculateFloorStats(floorRooms);
-        const floorStatsHTML = createFloorStatsHTML(floorStats);
 
         return `
             <div class="floor-section">
@@ -185,39 +165,12 @@ function displayRoomsByFloor(rooms) {
                         <i class="fas fa-layer-group me-2"></i>Tầng ${floor}
                         <span class="badge bg-primary ms-2">${floorRooms.length} phòng</span>
                     </h4>
-                    <div class="floor-stats">
-                        ${floorStatsHTML}
-                    </div>
                 </div>
                 <div class="row">
                     ${floorRooms.map(room => createRoomCard(room)).join('')}
                 </div>
             </div>
         `;
-    }).join('');
-}
-
-// Create floor stats HTML - HIỂN THỊ ĐẦY ĐỦ CÁC TRẠNG THÁI
-function createFloorStatsHTML(stats) {
-    const statusConfig = [
-        { key: 'vd', label: 'VD', color: 'bg-secondary' },
-        { key: 'vc', label: 'VC', color: 'bg-light text-dark' },
-        { key: 'vd/arr', label: 'VD/ARR', color: 'bg-secondary' },
-        { key: 'vc/arr', label: 'VC/ARR', color: 'bg-light text-dark' },
-        { key: 'do', label: 'DO', color: 'bg-warning text-dark' },
-        { key: 'do/arr', label: 'DO/ARR', color: 'bg-warning text-dark' },
-        { key: 'od', label: 'OD', color: 'bg-dark' },
-        { key: 'oc', label: 'OC', color: 'bg-warning' },
-        { key: 'dnd', label: 'DND', color: 'bg-warning' },
-        { key: 'nn', label: 'NN', color: 'bg-warning' },
-        { key: 'lock', label: 'Lock', color: 'bg-danger' },
-        { key: 'ip', label: 'IP', color: 'bg-success' }
-    ];
-
-    return statusConfig.map(stat => {
-        const count = stats[stat.key] || 0;
-        // HIỂN THỊ TẤT CẢ CÁC TRẠNG THÁI, KỂ CẢ SỐ 0
-        return `<span class="badge ${stat.color} me-1 mb-1 floor-stat-item">${stat.label}: ${count}</span>`;
     }).join('');
 }
 
