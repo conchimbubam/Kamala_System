@@ -1,6 +1,7 @@
 // Dashboard JavaScript
 let allRooms = [];
 let currentFilter = 'all';
+let clickTimer = null; // Biến dùng để xử lý xung đột giữa click và double click
 
 // DOM Content Loaded
 document.addEventListener('DOMContentLoaded', function() {
@@ -34,7 +35,8 @@ function setupEventListeners() {
 
 // Load data from API
 async function loadData() {
-    showLoading();
+    // Chỉ hiện loading lần đầu hoặc khi force reload, không hiện khi update ngầm
+    if (allRooms.length === 0) showLoading();
     
     try {
         const [roomsResponse, fileInfoResponse] = await Promise.all([
@@ -52,9 +54,10 @@ async function loadData() {
         if (roomsData.success) {
             allRooms = roomsData.data;
             updateFileInfo(fileInfoData.data);
-            displayRoomsByFloor(allRooms);
-            updateFilterCounts(allRooms);
-            showFloorsContainer();
+            
+            // Apply filter hiện tại
+            filterRooms(currentFilter); 
+            
             updateLastUpdated();
         } else {
             throw new Error('Invalid data format');
@@ -62,6 +65,10 @@ async function loadData() {
     } catch (error) {
         console.error('Error loading data:', error);
         showError('Không thể tải dữ liệu: ' + error.message);
+    } finally {
+        if (document.getElementById('loading-spinner').style.display === 'block') {
+            showFloorsContainer();
+        }
     }
 }
 
@@ -83,7 +90,25 @@ function updateFileInfo(fileInfo) {
     `;
 }
 
-// Update filter counts với logic mới
+// Calculate floor statistics
+function calculateFloorStats(rooms) {
+    const stats = {
+        'vd': 0, 'od': 0, 'vc': 0, 'oc': 0, 
+        'vd/arr': 0, 'vc/arr': 0, 'dnd': 0, 'nn': 0, 
+        'lock': 0, 'ip': 0, 'do': 0, 'do/arr': 0
+    };
+    
+    rooms.forEach(room => {
+        const status = room.roomStatus;
+        if (status in stats) {
+            stats[status]++;
+        }
+    });
+    
+    return stats;
+}
+
+// Update filter counts
 function updateFilterCounts(rooms) {
     const counts = {
         'all': rooms.length,
@@ -138,7 +163,7 @@ function updateFilterCounts(rooms) {
     });
 }
 
-// Display rooms by floor - ĐÃ LOẠI BỎ THỐNG KÊ TỪNG TẦNG
+// Display rooms by floor với thống kê từng tầng
 function displayRoomsByFloor(rooms) {
     const container = document.getElementById('floors-container');
     
@@ -157,6 +182,8 @@ function displayRoomsByFloor(rooms) {
     
     container.innerHTML = sortedFloors.map(floor => {
         const floorRooms = floors[floor];
+        const floorStats = calculateFloorStats(floorRooms);
+        const floorStatsHTML = createFloorStatsHTML(floorStats);
 
         return `
             <div class="floor-section">
@@ -165,6 +192,9 @@ function displayRoomsByFloor(rooms) {
                         <i class="fas fa-layer-group me-2"></i>Tầng ${floor}
                         <span class="badge bg-primary ms-2">${floorRooms.length} phòng</span>
                     </h4>
+                    <div class="floor-stats">
+                        ${floorStatsHTML}
+                    </div>
                 </div>
                 <div class="row">
                     ${floorRooms.map(room => createRoomCard(room)).join('')}
@@ -172,6 +202,101 @@ function displayRoomsByFloor(rooms) {
             </div>
         `;
     }).join('');
+}
+
+// Create floor stats HTML
+function createFloorStatsHTML(stats) {
+    const statusConfig = [
+        { key: 'vd', label: 'VD', color: 'bg-secondary' },
+        { key: 'vc', label: 'VC', color: 'bg-light text-dark' },
+        { key: 'vd/arr', label: 'VD/ARR', color: 'bg-secondary' },
+        { key: 'vc/arr', label: 'VC/ARR', color: 'bg-light text-dark' },
+        { key: 'do', label: 'DO', color: 'bg-warning text-dark' },
+        { key: 'do/arr', label: 'DO/ARR', color: 'bg-warning text-dark' },
+        { key: 'od', label: 'OD', color: 'bg-dark' },
+        { key: 'oc', label: 'OC', color: 'bg-warning' },
+        { key: 'dnd', label: 'DND', color: 'bg-warning' },
+        { key: 'nn', label: 'NN', color: 'bg-warning' },
+        { key: 'lock', label: 'Lock', color: 'bg-danger' },
+        { key: 'ip', label: 'IP', color: 'bg-success' }
+    ];
+
+    return statusConfig.map(stat => {
+        const count = stats[stat.key] || 0;
+        return `<span class="badge ${stat.color} me-1 mb-1 floor-stat-item">${stat.label}: ${count}</span>`;
+    }).join('');
+}
+
+// --- LOGIC XỬ LÝ CLICK VÀ DOUBLE CLICK ---
+
+// Hàm xử lý Click đơn (Mở Modal)
+function handleRoomClick(roomNo) {
+    // Nếu đã có timer (đang chờ double click), clear nó đi
+    if (clickTimer) clearTimeout(clickTimer);
+    
+    // Tạo timer mới, chờ 250ms. Nếu không có click thứ 2 thì chạy hàm này.
+    clickTimer = setTimeout(() => {
+        showRoomEditModal(roomNo);
+        clickTimer = null;
+    }, 250);
+}
+
+// Hàm xử lý Double Click (Đổi trạng thái)
+function handleRoomDoubleClick(roomNo, currentStatus) {
+    // Hủy timer click đơn ngay lập tức để không mở Modal
+    if (clickTimer) {
+        clearTimeout(clickTimer);
+        clickTimer = null;
+    }
+
+    // Logic xác định trạng thái mới
+    let newStatus = null;
+    const statusLower = currentStatus.toLowerCase();
+
+    if (statusLower === 'vd') {
+        newStatus = 'vc';
+    } else if (statusLower === 'vd/arr') {
+        newStatus = 'vc/arr';
+    } else if (statusLower === 'od') {
+        newStatus = 'oc';
+    }
+
+    if (newStatus) {
+        // Thực hiện cập nhật
+        performQuickUpdate(roomNo, newStatus, currentStatus);
+    } else {
+        // Báo lỗi cho các trạng thái khác
+        showToastMessage('Thao tác lỗi: Chỉ hỗ trợ chuyển VD->VC, VD/ARR->VC/ARR, OD->OC', 'danger');
+    }
+}
+
+// Gọi API cập nhật nhanh
+async function performQuickUpdate(roomNo, newStatus, oldStatus) {
+    try {
+        const response = await fetch('/api/rooms/hk-quick-update', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                roomNo: roomNo,
+                newStatus: newStatus
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            showToastMessage(`Đã cập nhật phòng ${roomNo}: ${oldStatus.toUpperCase()} ➝ ${newStatus.toUpperCase()}`, 'success');
+            // Reload data nhẹ nhàng
+            loadData();
+        } else {
+            showToastMessage(data.error || 'Có lỗi xảy ra', 'danger');
+        }
+    } catch (error) {
+        console.error('Update error:', error);
+        showToastMessage('Lỗi kết nối server', 'danger');
+    }
 }
 
 // Create room card HTML
@@ -204,9 +329,12 @@ function createRoomCard(room) {
         guestDisplay = '<div class="guest-name">Trống</div>';
     }
     
+    // Thêm on click và on dblclick
     return `
         <div class="col-6 col-sm-4 col-md-3 col-lg-2 col-xl-1">
-            <div class="room-card ${statusClass}" onclick="showRoomEditModal('${room.roomNo}')">
+            <div class="room-card ${statusClass}" 
+                 onclick="handleRoomClick('${room.roomNo}')"
+                 ondblclick="handleRoomDoubleClick('${room.roomNo}', '${room.roomStatus}')">
                 <div class="room-number">${room.roomNo}</div>
                 <div class="guest-info">
                     ${guestDisplay}
@@ -263,7 +391,7 @@ async function confirmUpdate() {
             updateModal.hide();
             
             // Show success message and reload data
-            showSuccessMessage('Dữ liệu đã được cập nhật thành công từ Google Sheets');
+            showToastMessage('Dữ liệu đã được cập nhật thành công từ Google Sheets', 'success');
             loadData();
         } else {
             showUpdateError(data.error || 'Có lỗi xảy ra khi cập nhật dữ liệu');
@@ -288,43 +416,37 @@ function showUpdateError(message) {
     errorElement.style.display = 'block';
 }
 
-// Filter rooms với LOGIC MỚI
+// Filter rooms
 function filterRooms(filter) {
     let filteredRooms = allRooms;
 
     switch (filter) {
         case 'occupied':
-            // Đang ở: OD, OC, DND, NN
             filteredRooms = allRooms.filter(room => 
                 ['od', 'oc', 'dnd', 'nn'].includes(room.roomStatus)
             );
             break;
         case 'arrival':
-            // Có khách đến: VD/ARR, VC/ARR, DO/ARR
             filteredRooms = allRooms.filter(room => 
                 ['vd/arr', 'vc/arr', 'do/arr'].includes(room.roomStatus)
             );
             break;
         case 'cleaned':
-            // Phòng đã dọn: OC, VC, VC/ARR
             filteredRooms = allRooms.filter(room => 
                 ['oc', 'vc', 'vc/arr'].includes(room.roomStatus)
             );
             break;
         case 'not-cleaned':
-            // Phòng chưa dọn: VD, VD/ARR, OD, DND, NN, DO, DO/ARR
             filteredRooms = allRooms.filter(room => 
                 ['vd', 'vd/arr', 'od', 'dnd', 'nn', 'do', 'do/arr'].includes(room.roomStatus)
             );
             break;
         case 'checked':
-            // Phòng đã kiểm: IP
             filteredRooms = allRooms.filter(room => 
                 room.roomStatus === 'ip'
             );
             break;
         case 'not-departed':
-            // Phòng chưa rời đi: DO, DO/ARR
             filteredRooms = allRooms.filter(room => 
                 ['do', 'do/arr'].includes(room.roomStatus)
             );
@@ -334,7 +456,9 @@ function filterRooms(filter) {
     }
 
     displayRoomsByFloor(filteredRooms);
-    updateFilterCounts(filteredRooms);
+    updateFilterCounts(filteredRooms); // Cập nhật số liệu dựa trên danh sách filtered nếu muốn, hoặc giữ nguyên allRooms
+    // Tuy nhiên theo logic cũ, updateFilterCounts dùng allRooms để đếm tổng quát, nên ở đây ta gọi lại updateFilterCounts(allRooms) trong loadData,
+    // Trong hàm filterRooms này ta chỉ display lại thôi.
 }
 
 // Helper functions
@@ -369,29 +493,39 @@ function updateLastUpdated() {
         `Cập nhật: ${now.toLocaleDateString('vi-VN')} ${now.toLocaleTimeString('vi-VN')}`;
 }
 
-// Show success message
-function showSuccessMessage(message) {
-    // Create toast element
-    const toast = document.createElement('div');
-    toast.className = 'toast align-items-center text-white bg-success border-0 position-fixed top-0 end-0 m-3';
-    toast.style.zIndex = '1060';
-    toast.innerHTML = `
-        <div class="d-flex">
-            <div class="toast-body">
-                <i class="fas fa-check-circle me-2"></i>${message}
+// Show Toast Message (Unified function for Success and Error)
+function showToastMessage(message, type = 'success') {
+    // type: 'success' (green) or 'danger' (red)
+    
+    // Remove existing toast if any to prevent stacking
+    const existingToast = document.querySelector('.toast-container');
+    if (existingToast) existingToast.remove();
+
+    const toastContainer = document.createElement('div');
+    toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
+    toastContainer.style.zIndex = '1070';
+
+    const bgColor = type === 'success' ? 'bg-success' : 'bg-danger';
+    const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
+
+    toastContainer.innerHTML = `
+        <div class="toast align-items-center text-white ${bgColor} border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body">
+                    <i class="fas ${icon} me-2"></i>${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
             </div>
-            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
         </div>
     `;
     
-    document.body.appendChild(toast);
+    document.body.appendChild(toastContainer);
     
-    // Show toast
-    const bsToast = new bootstrap.Toast(toast);
+    const toastElement = toastContainer.querySelector('.toast');
+    const bsToast = new bootstrap.Toast(toastElement, { delay: 3000 });
     bsToast.show();
     
-    // Remove toast after hide
-    toast.addEventListener('hidden.bs.toast', () => {
-        document.body.removeChild(toast);
+    toastElement.addEventListener('hidden.bs.toast', () => {
+        toastContainer.remove();
     });
 }
