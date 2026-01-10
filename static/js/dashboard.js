@@ -90,25 +90,7 @@ function updateFileInfo(fileInfo) {
     `;
 }
 
-// Calculate floor statistics
-function calculateFloorStats(rooms) {
-    const stats = {
-        'vd': 0, 'od': 0, 'vc': 0, 'oc': 0, 
-        'vd/arr': 0, 'vc/arr': 0, 'dnd': 0, 'nn': 0, 
-        'lock': 0, 'ip': 0, 'do': 0, 'do/arr': 0
-    };
-    
-    rooms.forEach(room => {
-        const status = room.roomStatus;
-        if (status in stats) {
-            stats[status]++;
-        }
-    });
-    
-    return stats;
-}
-
-// Update filter counts
+// Update filter counts (Global counts - giữ nguyên thống kê tổng)
 function updateFilterCounts(rooms) {
     const counts = {
         'all': rooms.length,
@@ -163,7 +145,7 @@ function updateFilterCounts(rooms) {
     });
 }
 
-// Display rooms by floor với thống kê từng tầng
+// Display rooms by floor (Đã loại bỏ thống kê chi tiết từng tầng)
 function displayRoomsByFloor(rooms) {
     const container = document.getElementById('floors-container');
     
@@ -182,9 +164,7 @@ function displayRoomsByFloor(rooms) {
     
     container.innerHTML = sortedFloors.map(floor => {
         const floorRooms = floors[floor];
-        const floorStats = calculateFloorStats(floorRooms);
-        const floorStatsHTML = createFloorStatsHTML(floorStats);
-
+        
         return `
             <div class="floor-section">
                 <div class="floor-header">
@@ -192,38 +172,12 @@ function displayRoomsByFloor(rooms) {
                         <i class="fas fa-layer-group me-2"></i>Tầng ${floor}
                         <span class="badge bg-primary ms-2">${floorRooms.length} phòng</span>
                     </h4>
-                    <div class="floor-stats">
-                        ${floorStatsHTML}
-                    </div>
                 </div>
                 <div class="row">
                     ${floorRooms.map(room => createRoomCard(room)).join('')}
                 </div>
             </div>
         `;
-    }).join('');
-}
-
-// Create floor stats HTML
-function createFloorStatsHTML(stats) {
-    const statusConfig = [
-        { key: 'vd', label: 'VD', color: 'bg-secondary' },
-        { key: 'vc', label: 'VC', color: 'bg-light text-dark' },
-        { key: 'vd/arr', label: 'VD/ARR', color: 'bg-secondary' },
-        { key: 'vc/arr', label: 'VC/ARR', color: 'bg-light text-dark' },
-        { key: 'do', label: 'DO', color: 'bg-warning text-dark' },
-        { key: 'do/arr', label: 'DO/ARR', color: 'bg-warning text-dark' },
-        { key: 'od', label: 'OD', color: 'bg-dark' },
-        { key: 'oc', label: 'OC', color: 'bg-warning' },
-        { key: 'dnd', label: 'DND', color: 'bg-warning' },
-        { key: 'nn', label: 'NN', color: 'bg-warning' },
-        { key: 'lock', label: 'Lock', color: 'bg-danger' },
-        { key: 'ip', label: 'IP', color: 'bg-success' }
-    ];
-
-    return statusConfig.map(stat => {
-        const count = stats[stat.key] || 0;
-        return `<span class="badge ${stat.color} me-1 mb-1 floor-stat-item">${stat.label}: ${count}</span>`;
     }).join('');
 }
 
@@ -456,9 +410,7 @@ function filterRooms(filter) {
     }
 
     displayRoomsByFloor(filteredRooms);
-    updateFilterCounts(filteredRooms); // Cập nhật số liệu dựa trên danh sách filtered nếu muốn, hoặc giữ nguyên allRooms
-    // Tuy nhiên theo logic cũ, updateFilterCounts dùng allRooms để đếm tổng quát, nên ở đây ta gọi lại updateFilterCounts(allRooms) trong loadData,
-    // Trong hàm filterRooms này ta chỉ display lại thôi.
+    updateFilterCounts(filteredRooms); 
 }
 
 // Helper functions
