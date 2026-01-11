@@ -1,10 +1,13 @@
 name: 🚀 Giữ Kamala System Alive
+
 on:
   schedule:
-    - cron: '*/5 1-9 * * *'
-  workflow_dispatch:
+    # Chạy mỗi 14 phút (Render sleep sau 15p -> 14p là tối ưu nhất)
+    # Chạy 24/7 để đảm bảo hệ thống luôn sẵn sàng
+    - cron: '*/14 * * * *'
+  workflow_dispatch: # Cho phép chạy thủ công
   push:
-    branches: [ main ]
+    branches: [ main ] # Chạy khi có code mới (tùy chọn)
 
 jobs:
   keep-awake:
@@ -12,65 +15,57 @@ jobs:
     timeout-minutes: 5
     
     steps:
-    - name: ⏰ Hiển thị thời gian
-      run: |
-        echo "Thời gian hệ thống (UTC): $(date -u '+%H:%M %d/%m/%Y')"
-        echo "Thời gian Việt Nam (GMT+7): $(TZ='Asia/Ho_Chi_Minh' date '+%H:%M %d/%m/%Y')"
-        echo "---"
-    
-    - name: 📡 Ping Kamala System
-      run: |
-        APP_URL="https://kamala-system.onrender.com/api/health"
-        
-        echo "🌐 Đang ping đến: $APP_URL"
-        echo ""
-        
-        # Lấy response
-        RESPONSE=$(curl -s --max-time 45 "$APP_URL")
-        RESPONSE_CODE=$?
-        
-        if [ $RESPONSE_CODE -eq 0 ]; then
-          echo "✅ Kết nối thành công!"
-          
-          # Parse JSON bằng Python (cách viết đúng)
-          python3 << EOF
-import json
-import sys
+      - name: ⏰ Hiển thị thời gian
+        run: |
+          echo "Thời gian hệ thống (UTC): $(date -u '+%H:%M %d/%m/%Y')"
+          echo "Thời gian Việt Nam (GMT+7): $(TZ='Asia/Ho_Chi_Minh' date '+%H:%M %d/%m/%Y')"
+          echo "---"
 
-try:
-    data = json.loads('''$RESPONSE''')
-    print("📊 Thông tin chi tiết:")
-    print(f"Status: {data.get('status', 'N/A')}")
-    print(f"Service: {data.get('service', 'N/A')}")
-    print(f"Database: {data.get('database', 'N/A')}")
-    print(f"Time: {data.get('timestamp', 'N/A')}")
-except Exception as e:
-    print(f"⚠️ Không parse được JSON: {e}")
-    print("Raw response:")
-    print('''$RESPONSE''')
-EOF
-        else
-          echo "⚠️ Lỗi kết nối. Mã: $RESPONSE_CODE"
-          echo ""
-          echo "🔄 Thử lại sau 15 giây..."
-          sleep 15
+      - name: 📡 Ping Kamala System
+        run: |
+          # Cấu hình URL
+          APP_URL="https://kamala-system.onrender.com/api/health"
+          echo "🌐 Đang ping đến: $APP_URL"
           
-          RESPONSE_2=$(curl -s --max-time 60 "$APP_URL")
-          RESPONSE_CODE_2=$?
+          # Gửi request và lưu response + status code
+          # -s: Silent (không hiện thanh tiến trình)
+          # -w: Write out (ghi status code ra cuối)
+          # --max-time: Timeout 30s
+          HTTP_CODE=$(curl -s -o response.json -w "%{http_code}" --max-time 30 "$APP_URL")
           
-          if [ $RESPONSE_CODE_2 -eq 0 ]; then
-            echo "✅ Thành công ở lần thử thứ 2!"
+          echo "Mã phản hồi HTTP: $HTTP_CODE"
+          
+          if [ "$HTTP_CODE" -eq 200 ]; then
+            echo "✅ Kết nối thành công!"
+            
+            # Sử dụng jq để parse JSON (nhanh và chuẩn hơn Python trong bash)
+            echo "📊 Thông tin chi tiết:"
+            if [ -s response.json ]; then
+              jq '.' response.json || echo "⚠️ JSON không hợp lệ"
+            else
+              echo "⚠️ Response rỗng"
+            fi
+            
           else
-            echo "❌ Thất bại cả 2 lần"
-            exit 1
+            echo "⚠️ Lỗi kết nối hoặc App đang ngủ (Code: $HTTP_CODE)"
+            echo "🔄 Đang thử đánh thức lại sau 15 giây..."
+            sleep 15
+            
+            # Thử lại lần 2
+            HTTP_CODE_2=$(curl -s -o /dev/null -w "%{http_code}" --max-time 45 "$APP_URL")
+            
+            if [ "$HTTP_CODE_2" -eq 200 ]; then
+              echo "✅ App đã tỉnh dậy thành công ở lần thử thứ 2!"
+            else
+              echo "❌ Thất bại: Không thể kết nối tới Kamala System"
+              exit 1
+            fi
           fi
-        fi
-    
-    - name: ✅ Kết thúc
-      if: success()
-      run: |
-        echo ""
-        echo "=========================================="
-        echo "✨ HOÀN TẤT - $(TZ='Asia/Ho_Chi_Minh' date '+%H:%M %d/%m/%Y')"
-        echo "✅ Kamala System đã được giữ alive"
-        echo "=========================================="
+
+      - name: ✅ Kết thúc
+        if: success()
+        run: |
+          echo "=========================================="
+          echo "✨ HOÀN TẤT - $(TZ='Asia/Ho_Chi_Minh' date '+%H:%M %d/%m/%Y')"
+          echo "✅ Kamala System đã được giữ alive"
+          echo "=========================================="
