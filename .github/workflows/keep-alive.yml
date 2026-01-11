@@ -1,0 +1,89 @@
+name: 🚀 Giữ Kamala System Alive
+on:
+  # Lịch trình: mỗi 5 phút từ 1h-9h UTC (8h-16h GMT+7)
+  schedule:
+    - cron: '*/5 1-9 * * *'
+  
+  # Cho phép chạy thủ công
+  workflow_dispatch:
+  
+  # Tự chạy khi có code mới
+  push:
+    branches: [ main ]
+
+jobs:
+  keep-awake:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    
+    steps:
+    - name: ⏰ Hiển thị thời gian
+      run: |
+        echo "Thời gian hệ thống (UTC): $(date -u '+%H:%M %d/%m/%Y')"
+        echo "Thời gian Việt Nam (GMT+7): $(TZ='Asia/Ho_Chi_Minh' date '+%H:%M %d/%m/%Y')"
+        echo "---"
+    
+    - name: 📡 Ping Kamala System
+      run: |
+        # URL CỦA BẠN - ĐÃ ĐƯỢC ĐIỀN SẴN
+        APP_URL="https://kamala-system.onrender.com/api/health"
+        
+        echo "🌐 Đang ping đến: $APP_URL"
+        echo ""
+        
+        # Lần thử 1
+        echo "🔄 Lần thử 1..."
+        RESPONSE_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 45 "$APP_URL")
+        
+        if [ "$RESPONSE_CODE" -eq 200 ]; then
+          echo "✅ Thành công! Mã: $RESPONSE_CODE"
+          
+          # Lấy thông tin chi tiết
+          echo ""
+          echo "📊 Thông tin chi tiết:"
+          curl -s --max-time 45 "$APP_URL" | python3 -c "
+import json, sys
+try:
+    data = json.load(sys.stdin)
+    print(f'Status: {data.get(\"status\", \"N/A\")}')
+    print(f'Service: {data.get(\"service\", \"N/A\")}')
+    print(f'Database: {data.get(\"database\", \"N/A\")}')
+    print(f'Time: {data.get(\"timestamp\", \"N/A\")}')
+except:
+    print('Không đọc được JSON')
+          "
+        else
+          echo "⚠️ Lần 1 thất bại: Mã $RESPONSE_CODE"
+          echo ""
+          
+          # Đợi 15 giây để app wake up
+          echo "⏳ Đợi 15 giây để app wake up..."
+          sleep 15
+          
+          # Lần thử 2
+          echo "🔄 Lần thử 2..."
+          RESPONSE_CODE_2=$(curl -s -o /dev/null -w "%{http_code}" --max-time 60 "$APP_URL")
+          
+          if [ "$RESPONSE_CODE_2" -eq 200 ]; then
+            echo "✅ Thành công ở lần 2! Mã: $RESPONSE_CODE_2"
+          else
+            echo "❌ Thất bại cả 2 lần"
+            echo "Mã cuối: $RESPONSE_CODE_2"
+            echo ""
+            echo "🔍 Nguyên nhân có thể:"
+            echo "   1. App đang bị lỗi"
+            echo "   2. URL không đúng"
+            echo "   3. Quá thời gian chờ"
+            exit 1
+          fi
+        fi
+    
+    - name: ✅ Kết thúc
+      if: success()
+      run: |
+        echo ""
+        echo "=========================================="
+        echo "✨ HOÀN TẤT - $(TZ='Asia/Ho_Chi_Minh' date '+%H:%M %d/%m/%Y')"
+        echo "✅ Kamala System đã được giữ alive"
+        echo "⏰ Lần chạy tiếp theo: sau 5 phút"
+        echo "=========================================="
