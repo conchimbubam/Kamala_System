@@ -1,13 +1,8 @@
 name: 🚀 Giữ Kamala System Alive
 on:
-  # Lịch trình: mỗi 5 phút từ 1h-9h UTC (8h-16h GMT+7)
   schedule:
     - cron: '*/5 1-9 * * *'
-  
-  # Cho phép chạy thủ công
   workflow_dispatch:
-  
-  # Tự chạy khi có code mới
   push:
     branches: [ main ]
 
@@ -25,55 +20,48 @@ jobs:
     
     - name: 📡 Ping Kamala System
       run: |
-        # URL CỦA BẠN - ĐÃ ĐƯỢC ĐIỀN SẴN
         APP_URL="https://kamala-system.onrender.com/api/health"
         
         echo "🌐 Đang ping đến: $APP_URL"
         echo ""
         
-        # Lần thử 1
-        echo "🔄 Lần thử 1..."
-        RESPONSE_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 45 "$APP_URL")
+        # Lấy response
+        RESPONSE=$(curl -s --max-time 45 "$APP_URL")
+        RESPONSE_CODE=$?
         
-        if [ "$RESPONSE_CODE" -eq 200 ]; then
-          echo "✅ Thành công! Mã: $RESPONSE_CODE"
+        if [ $RESPONSE_CODE -eq 0 ]; then
+          echo "✅ Kết nối thành công!"
           
-          # Lấy thông tin chi tiết
-          echo ""
-          echo "📊 Thông tin chi tiết:"
-          curl -s --max-time 45 "$APP_URL" | python3 -c "
-import json, sys
+          # Parse JSON bằng Python (cách viết đúng)
+          python3 << EOF
+import json
+import sys
+
 try:
-    data = json.load(sys.stdin)
-    print(f'Status: {data.get(\"status\", \"N/A\")}')
-    print(f'Service: {data.get(\"service\", \"N/A\")}')
-    print(f'Database: {data.get(\"database\", \"N/A\")}')
-    print(f'Time: {data.get(\"timestamp\", \"N/A\")}')
-except:
-    print('Không đọc được JSON')
-          "
+    data = json.loads('''$RESPONSE''')
+    print("📊 Thông tin chi tiết:")
+    print(f"Status: {data.get('status', 'N/A')}")
+    print(f"Service: {data.get('service', 'N/A')}")
+    print(f"Database: {data.get('database', 'N/A')}")
+    print(f"Time: {data.get('timestamp', 'N/A')}")
+except Exception as e:
+    print(f"⚠️ Không parse được JSON: {e}")
+    print("Raw response:")
+    print('''$RESPONSE''')
+EOF
         else
-          echo "⚠️ Lần 1 thất bại: Mã $RESPONSE_CODE"
+          echo "⚠️ Lỗi kết nối. Mã: $RESPONSE_CODE"
           echo ""
-          
-          # Đợi 15 giây để app wake up
-          echo "⏳ Đợi 15 giây để app wake up..."
+          echo "🔄 Thử lại sau 15 giây..."
           sleep 15
           
-          # Lần thử 2
-          echo "🔄 Lần thử 2..."
-          RESPONSE_CODE_2=$(curl -s -o /dev/null -w "%{http_code}" --max-time 60 "$APP_URL")
+          RESPONSE_2=$(curl -s --max-time 60 "$APP_URL")
+          RESPONSE_CODE_2=$?
           
-          if [ "$RESPONSE_CODE_2" -eq 200 ]; then
-            echo "✅ Thành công ở lần 2! Mã: $RESPONSE_CODE_2"
+          if [ $RESPONSE_CODE_2 -eq 0 ]; then
+            echo "✅ Thành công ở lần thử thứ 2!"
           else
             echo "❌ Thất bại cả 2 lần"
-            echo "Mã cuối: $RESPONSE_CODE_2"
-            echo ""
-            echo "🔍 Nguyên nhân có thể:"
-            echo "   1. App đang bị lỗi"
-            echo "   2. URL không đúng"
-            echo "   3. Quá thời gian chờ"
             exit 1
           fi
         fi
@@ -85,5 +73,4 @@ except:
         echo "=========================================="
         echo "✨ HOÀN TẤT - $(TZ='Asia/Ho_Chi_Minh' date '+%H:%M %d/%m/%Y')"
         echo "✅ Kamala System đã được giữ alive"
-        echo "⏰ Lần chạy tiếp theo: sau 5 phút"
         echo "=========================================="
