@@ -48,13 +48,6 @@
         .staff-stats {
             margin-top: 15px;
         }
-        .room-list {
-            max-width: 250px;
-            word-wrap: break-word;
-        }
-        .category-badge {
-            font-size: 0.85em;
-        }
     </style>
 </head>
 <body>
@@ -68,106 +61,92 @@
             </div>
         </div>
 
-        <!-- Tổng quan ngày -->
+        <!-- Summary Statistics -->
         <div class="row mb-4">
             <div class="col-md-6">
                 <div class="summary-card">
-                    <h5>Tổng quan ngày</h5>
+                    <h5>Tổng quan</h5>
                     <div class="row">
                         <div class="col-6">
-                            <strong>Số nhân viên tham gia:</strong> {{ statistics.staff_stats|length }}
+                            <strong>Tổng thao tác:</strong> {{ statistics.total_actions }}
                         </div>
                         <div class="col-6">
-                            <strong>Tổng số phòng đã dọn:</strong> {{ statistics.total_actions }}
+                            <strong>Số nhân viên:</strong> {{ statistics.staff_stats|length }}
+                        </div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-6">
+                            <strong>Dọn phòng trống:</strong> {{ statistics.action_types.get('dọn phòng trống', 0) }}
+                        </div>
+                        <div class="col-6">
+                            <strong>Dọn phòng ở:</strong> {{ statistics.action_types.get('dọn phòng ở', 0) }}
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Báo cáo chi tiết theo nhân viên -->
-        <h5 class="mt-4">Chi tiết thao tác dọn phòng theo nhân viên</h5>
+        <!-- Staff Statistics -->
+        {% if statistics.staff_stats %}
+        <div class="staff-stats">
+            <h5>Thống kê theo nhân viên</h5>
+            <div class="row">
+                {% for staff, stats in statistics.staff_stats.items() %}
+                <div class="col-md-4 mb-3">
+                    <div class="border p-2">
+                        <div class="d-flex justify-content-between">
+                            <strong>{{ staff }}</strong>
+                            <span class="badge bg-primary">{{ stats.total }}</span>
+                        </div>
+                        <div class="small">
+                            <span class="text-success">Phòng trống: {{ stats['dọn phòng trống'] }}</span> | 
+                            <span class="text-warning">Phòng ở: {{ stats['dọn phòng ở'] }}</span>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Report Table -->
+        <h5 class="mt-4">Chi tiết thao tác</h5>
         <table class="table table-bordered table-sm">
             <thead class="table-dark">
                 <tr>
-                    <th width="20%">Nhân viên</th>
-                    <th width="20%">Phân loại</th>
-                    <th width="10%">Số lượng</th>
-                    <th width="50%">Chi tiết</th>
+                    <th>STT</th>
+                    <th>Nhân viên</th>
+                    <th>Phòng</th>
+                    <th>Loại thao tác</th>
+                    <th>Trạng thái mới</th>
+                    <th>Chi tiết</th>
+                    <th>Thời gian</th>
                 </tr>
             </thead>
             <tbody>
                 {% if report_data %}
-                    {# Nhóm dữ liệu theo nhân viên và phân loại #}
-                    {% set grouped_data = {} %}
                     {% for item in report_data %}
-                        {% set staff_name = item.user_name %}
-                        {% set category = '' %}
-                        
-                        {# Xác định phân loại theo logic #}
-                        {% if item.action_type == 'dọn phòng trống' and item.new_status == 'VC' %}
-                            {% set category = 'VD' %}
-                        {% elif item.action_type == 'dọn phòng ở' and item.new_status == 'OC' %}
-                            {% set category = 'OD' %}
-                        {% elif item.action_type == 'dọn phòng ở' and item.new_status == 'DND' %}
-                            {% set category = 'DND' %}
-                        {% elif item.action_type == 'dọn phòng ở' and item.new_status == 'NN' %}
-                            {% set category = 'NN' %}
-                        {% endif %}
-                        
-                        {% if category and category != '' %}
-                            {% if staff_name not in grouped_data %}
-                                {% set _ = grouped_data.update({staff_name: {}}) %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>{{ item.user_name }}</td>
+                        <td><strong>{{ item.room_no }}</strong></td>
+                        <td>
+                            {% if item.action_type == 'dọn phòng trống' %}
+                                <span class="badge bg-success">{{ item.action_type }}</span>
+                            {% elif item.action_type == 'dọn phòng ở' %}
+                                <span class="badge bg-warning text-dark">{{ item.action_type }}</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ item.action_type }}</span>
                             {% endif %}
-                            
-                            {% if category not in grouped_data[staff_name] %}
-                                {% set _ = grouped_data[staff_name].update({category: {'count': 0, 'rooms': []}}) %}
-                            {% endif %}
-                            
-                            {% set _ = grouped_data[staff_name][category]['rooms'].append(item.room_no) %}
-                            {% set _ = grouped_data[staff_name][category].update({'count': grouped_data[staff_name][category]['count'] + 1}) %}
-                        {% endif %}
-                    {% endfor %}
-                    
-                    {# Hiển thị dữ liệu đã nhóm #}
-                    {% for staff_name, categories in grouped_data.items() %}
-                        {% set row_count = categories|length %}
-                        {% set first_row = true %}
-                        
-                        {% for category_name in ['VD', 'OD', 'DND', 'NN'] %}
-                            {% if category_name in categories %}
-                                <tr>
-                                    {% if first_row %}
-                                        <td rowspan="{{ row_count }}" style="vertical-align: top;">
-                                            <strong>{{ staff_name }}</strong>
-                                        </td>
-                                        {% set first_row = false %}
-                                    {% endif %}
-                                    
-                                    <td>
-                                        {% if category_name == 'VD' %}
-                                            <span class="badge bg-success category-badge">Dọn phòng trống (VD)</span>
-                                        {% elif category_name == 'OD' %}
-                                            <span class="badge bg-warning text-dark category-badge">Dọn phòng ở (OD)</span>
-                                        {% elif category_name == 'DND' %}
-                                            <span class="badge bg-info text-dark category-badge">DND</span>
-                                        {% elif category_name == 'NN' %}
-                                            <span class="badge bg-secondary category-badge">NN</span>
-                                        {% endif %}
-                                    </td>
-                                    
-                                    <td><strong>{{ categories[category_name]['count'] }}</strong></td>
-                                    
-                                    <td class="room-list">
-                                        {{ categories[category_name]['rooms']|join(', ') }}
-                                    </td>
-                                </tr>
-                            {% endif %}
-                        {% endfor %}
+                        </td>
+                        <td><strong>{{ item.new_status.upper() }}</strong></td>
+                        <td>{{ item.action_detail }}</td>
+                        <td>{{ item.timestamp.strftime('%H:%M %d/%m/%Y') }}</td>
+                    </tr>
                     {% endfor %}
                 {% else %}
                     <tr>
-                        <td colspan="4" class="text-center text-muted py-3">
+                        <td colspan="7" class="text-center text-muted py-3">
                             Không có dữ liệu báo cáo trong khoảng thời gian từ 8h15 đến hiện tại
                         </td>
                     </tr>
