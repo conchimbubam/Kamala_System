@@ -52,7 +52,8 @@
                         <!-- Nút Báo cáo HK - Hiển thị cho cả FO và HK -->
                         {% if user and (user.department == 'FO' or user.department == 'HK') %}
                         <li>
-                            <a class="dropdown-item" href="#" onclick="showHKReportModal()">
+                            <!-- THAY ĐỔI Ở ĐÂY: Thay onclick="showHKReportModal()" bằng href trực tiếp -->
+                            <a class="dropdown-item" href="/api/report/hk/export" target="_blank">
                                 <i class="fas fa-chart-bar me-2"></i>Báo cáo HK
                             </a>
                         </li>
@@ -196,16 +197,16 @@
         </div>
     </div>
 
-    <!-- Include HK Report Modal -->
-    {% include 'report.html' %}
+    <!-- Bỏ include report.html vì không dùng modal nữa -->
+    <!-- {% include 'report.html' %} -->
 
     <!-- JavaScript -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
     <script src="{{ url_for('static', filename='js/room_modal.js') }}"></script>
-    <!-- Thêm report.js -->
-    <script src="{{ url_for('static', filename='js/report.js') }}"></script>
+    <!-- Bỏ report.js vì không cần nữa -->
+    <!-- <script src="{{ url_for('static', filename='js/report.js') }}"></script> -->
     
     <script>
         // Hàm in tasksheet
