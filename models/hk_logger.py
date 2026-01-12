@@ -9,6 +9,40 @@ class HKLogger:
     def __init__(self, db_manager):
         self.db = db_manager
     
+    def cleanup_old_logs(self):
+        """
+        Tự động xóa logs cũ, chỉ giữ lại logs của ngày hiện tại (từ 0h00)
+        """
+        try:
+            # Tính thời điểm bắt đầu ngày hiện tại (0h00)
+            today_start = datetime.now().replace(
+                hour=0, 
+                minute=0, 
+                second=0, 
+                microsecond=0
+            )
+            
+            with self.db.get_connection() as conn:
+                with conn.cursor() as cur:
+                    # Xóa logs cũ hơn 0h00 hôm nay
+                    cur.execute('''
+                        DELETE FROM activity_logs 
+                        WHERE timestamp < %s
+                    ''', (today_start,))
+                    deleted_count = cur.rowcount
+                    conn.commit()
+            
+            if deleted_count > 0:
+                logger.info(f"✅ Đã xóa {deleted_count} logs cũ trước {today_start.strftime('%d/%m/%Y')}")
+            else:
+                logger.info("✅ Không có logs cũ để xóa")
+            
+            return deleted_count
+            
+        except Exception as e:
+            logger.error(f"❌ Lỗi cleanup_old_logs: {e}")
+            return 0
+    
     def log_room_status_change(self, room_no, old_status, new_status, user_name, user_department="HK"):
         """Ghi log thay đổi trạng thái phòng"""
         try:
@@ -101,8 +135,11 @@ class HKLogger:
             logger.error(f"❌ Lỗi log_room_cleaning: {e}")
     
     def get_today_report(self):
-        """Lấy báo cáo từ 8h15 đến hiện tại"""
+        """Lấy báo cáo từ 1h00 đến hiện tại"""
         try:
+            # TỰ ĐỘNG XÓA LOGS CŨ TRƯỚC KHI LẤY BÁO CÁO
+            self.cleanup_old_logs()
+            
             now = datetime.now()
             start_time = now.replace(
                 hour=Config.HK_REPORT_START_HOUR, 
