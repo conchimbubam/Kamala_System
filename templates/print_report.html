@@ -6,231 +6,272 @@
     <title>Báo cáo Housekeeping - Kamala</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
+        /* Cấu hình chung cho trang in */
+        @page {
+            size: A4;
+            margin: 2cm;
+        }
+
+        body {
+            font-family: "Times New Roman", Times, serif; /* Font chữ cổ điển */
+            font-size: 13px;
+            color: #000;
+            background: #fff;
+            line-height: 1.4;
+        }
+
+        /* Ẩn các nút khi in */
         @media print {
             .no-print {
                 display: none !important;
             }
             .container {
+                width: 100% !important;
                 max-width: 100% !important;
+                padding: 0 !important;
+                margin: 0 !important;
             }
-            .table {
-                font-size: 12px;
+            body {
+                padding: 0;
             }
         }
-        body {
-            font-family: 'DejaVu Sans', Arial, sans-serif;
-        }
-        .header {
+
+        /* Header báo cáo */
+        .report-header {
             text-align: center;
-            margin-bottom: 20px;
-            border-bottom: 2px solid #333;
-            padding-bottom: 10px;
+            margin-bottom: 25px;
+            border-bottom: 2px solid #000;
+            padding-bottom: 15px;
         }
+
         .hotel-name {
-            font-size: 24px;
+            font-size: 20px;
             font-weight: bold;
+            text-transform: uppercase;
             margin-bottom: 5px;
         }
+
         .report-title {
-            font-size: 18px;
-            margin-bottom: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 5px;
         }
-        .report-period {
-            font-size: 14px;
-            color: #666;
+
+        .report-info {
+            font-size: 12px;
+            font-style: italic;
         }
-        .summary-card {
-            border: 1px solid #ddd;
-            padding: 15px;
+
+        /* Phần thống kê tổng quan - làm đơn giản */
+        .summary-section {
             margin-bottom: 20px;
-            border-radius: 5px;
+            border: 1px solid #000;
+            padding: 10px;
         }
-        .staff-detail-table {
-            margin-top: 20px;
-        }
-        .staff-header {
-            background-color: #f8f9fa;
+        
+        .summary-title {
             font-weight: bold;
+            text-decoration: underline;
+            margin-bottom: 5px;
+            font-size: 14px;
         }
-        .category-header {
-            background-color: #e9ecef;
+
+        /* Bảng dữ liệu */
+        .custom-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        .custom-table th, 
+        .custom-table td {
+            border: 1px solid #000;
+            padding: 6px 8px;
+            vertical-align: middle;
+        }
+
+        .custom-table th {
+            background-color: transparent; /* Không màu nền */
             font-weight: bold;
+            text-align: center;
+            border-bottom: 2px solid #000; /* Viền đậm hơn cho tiêu đề */
+        }
+
+        .custom-table td.staff-name {
+            font-weight: bold;
+            text-align: center;
+            background-color: #fff;
+        }
+
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        
+        /* Footer chữ ký (tùy chọn cho bản in) */
+        .print-footer {
+            margin-top: 40px;
+            display: flex;
+            justify-content: space-between;
+            page-break-inside: avoid;
+        }
+        .signature-box {
+            text-align: center;
+            width: 200px;
+        }
+        .signature-box p {
+            margin-top: 60px;
+            border-top: 1px dotted #000;
         }
     </style>
 </head>
 <body>
-    <div class="container mt-4">
-        <!-- Header -->
-        <div class="header">
-            <div class="hotel-name">KAMALA HOTEL</div>
-            <div class="report-title">BÁO CÁO HOUSEKEEPING</div>
-            <div class="report-period">
-                Thời gian báo cáo: {{ report_time.strftime('%H:%M %d/%m/%Y') }}
+    <div class="container">
+        <div class="report-header">
+            <div class="hotel-name">KAMALA HOTEL & APARTMENT</div>
+            <div class="report-title">BÁO CÁO CÔNG VIỆC HOUSEKEEPING</div>
+            <div class="report-info">
+                Ngày xuất báo cáo: {{ report_time.strftime('%d/%m/%Y') }} | Giờ: {{ report_time.strftime('%H:%M') }}
             </div>
         </div>
 
-        <!-- Summary Statistics -->
-        <div class="row mb-4">
-            <div class="col-md-6">
-                <div class="summary-card">
-                    <h5>Tổng quan ngày</h5>
-                    <div class="row">
-                        <div class="col-6">
-                            <strong>Số lượng nhân viên tham gia:</strong> {{ statistics.staff_stats|length }}
-                        </div>
-                        <div class="col-6">
-                            <strong>Tổng số lượng phòng đã dọn:</strong> {{ statistics.total_actions }}
-                        </div>
-                    </div>
+        <div class="summary-section">
+            <div class="summary-title">TỔNG QUAN:</div>
+            <div class="row">
+                <div class="col-6">
+                    - Số lượng nhân viên trực: <strong>{{ statistics.staff_stats|length }}</strong>
+                </div>
+                <div class="col-6">
+                    - Tổng số thao tác phòng: <strong>{{ statistics.total_actions }}</strong>
                 </div>
             </div>
         </div>
 
-        <!-- Staff Detail Table -->
-        <h5 class="mt-4">Chi tiết thao tác dọn phòng theo nhân viên</h5>
-        <table class="table table-bordered table-sm staff-detail-table">
-            <thead class="table-dark">
-                <tr>
-                    <th width="150">Nhân viên</th>
-                    <th width="200">Phân loại</th>
-                    <th width="100">Số lượng</th>
-                    <th>Chi tiết</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% if statistics.staff_stats %}
-                    {% for staff, stats in statistics.staff_stats.items() %}
-                        <!-- Dọn phòng trống (VD) -->
-                        <tr>
-                            {% if loop.first or (not loop.previtem or loop.previtem.key != staff) %}
-                                <td rowspan="4" class="staff-header">{{ staff }}</td>
-                            {% endif %}
-                            <td>Dọn phòng trống (VD)</td>
-                            <td>{{ stats['dọn phòng trống'] }}</td>
-                            <td>
-                                {% if report_data %}
-                                    {% set rooms = [] %}
-                                    {% for item in report_data %}
-                                        {% if item.user_name == staff and item.action_type == 'dọn phòng trống' %}
-                                            {% set _ = rooms.append(item.room_no) %}
-                                        {% endif %}
-                                    {% endfor %}
-                                    {{ rooms|join(', ') }}
-                                {% else %}
-                                    -
-                                {% endif %}
-                            </td>
-                        </tr>
-                        
-                        <!-- Dọn phòng ở (OD) -->
-                        <tr>
-                            <td>Dọn phòng ở (OD)</td>
-                            <td>{{ stats['dọn phòng ở'] }}</td>
-                            <td>
-                                {% if report_data %}
-                                    {% set rooms = [] %}
-                                    {% for item in report_data %}
-                                        {% if item.user_name == staff and item.action_type == 'dọn phòng ở' and item.new_status == 'oc' %}
-                                            {% set _ = rooms.append(item.room_no) %}
-                                        {% endif %}
-                                    {% endfor %}
-                                    {{ rooms|join(', ') }}
-                                {% else %}
-                                    -
-                                {% endif %}
-                            </td>
-                        </tr>
-                        
-                        <!-- DND -->
-                        <tr>
-                            <td>DND</td>
-                            <td>
-                                {% if report_data %}
-                                    {% set dnd_count = 0 %}
-                                    {% for item in report_data %}
-                                        {% if item.user_name == staff and item.new_status == 'dnd' %}
-                                            {% set dnd_count = dnd_count + 1 %}
-                                        {% endif %}
-                                    {% endfor %}
-                                    {{ dnd_count }}
-                                {% else %}
-                                    0
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if report_data %}
-                                    {% set rooms = [] %}
-                                    {% for item in report_data %}
-                                        {% if item.user_name == staff and item.new_status == 'dnd' %}
-                                            {% set _ = rooms.append(item.room_no) %}
-                                        {% endif %}
-                                    {% endfor %}
-                                    {{ rooms|join(', ') }}
-                                {% else %}
-                                    -
-                                {% endif %}
-                            </td>
-                        </tr>
-                        
-                        <!-- NN -->
-                        <tr>
-                            <td>NN</td>
-                            <td>
-                                {% if report_data %}
-                                    {% set nn_count = 0 %}
-                                    {% for item in report_data %}
-                                        {% if item.user_name == staff and item.new_status == 'nn' %}
-                                            {% set nn_count = nn_count + 1 %}
-                                        {% endif %}
-                                    {% endfor %}
-                                    {{ nn_count }}
-                                {% else %}
-                                    0
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if report_data %}
-                                    {% set rooms = [] %}
-                                    {% for item in report_data %}
-                                        {% if item.user_name == staff and item.new_status == 'nn' %}
-                                            {% set _ = rooms.append(item.room_no) %}
-                                        {% endif %}
-                                    {% endfor %}
-                                    {{ rooms|join(', ') }}
-                                {% else %}
-                                    -
-                                {% endif %}
-                            </td>
-                        </tr>
-                    {% endfor %}
-                {% else %}
+        <div style="margin-top: 20px;">
+            <div style="font-weight: bold; margin-bottom: 5px;">CHI TIẾT THAO TÁC THEO NHÂN VIÊN:</div>
+            
+            <table class="custom-table">
+                <thead>
                     <tr>
-                        <td colspan="4" class="text-center text-muted py-3">
-                            Không có dữ liệu báo cáo trong khoảng thời gian từ 8h15 đến hiện tại
-                        </td>
+                        <th width="20%">Nhân viên</th>
+                        <th width="20%">Loại công việc</th>
+                        <th width="10%">SL</th>
+                        <th width="50%">Danh sách phòng</th>
                     </tr>
-                {% endif %}
-            </tbody>
-        </table>
-
-        <!-- Print Button -->
-        <div class="no-print text-center mt-4">
-            <button class="btn btn-primary" onclick="window.print()">
-                <i class="fas fa-print me-2"></i>In báo cáo
-            </button>
-            <button class="btn btn-secondary ms-2" onclick="window.close()">
-                <i class="fas fa-times me-2"></i>Đóng
-            </button>
+                </thead>
+                <tbody>
+                    {% if statistics.staff_stats %}
+                        {% for staff, stats in statistics.staff_stats.items() %}
+                            <tr>
+                                <td rowspan="4" class="staff-name">{{ staff }}</td>
+                                <td>Dọn phòng trống (VD)</td>
+                                <td class="text-center">{{ stats['dọn phòng trống'] }}</td>
+                                <td>
+                                    {% if report_data %}
+                                        {% set rooms = [] %}
+                                        {% for item in report_data %}
+                                            {% if item.user_name == staff and item.action_type == 'dọn phòng trống' %}
+                                                {% set _ = rooms.append(item.room_no) %}
+                                            {% endif %}
+                                        {% endfor %}
+                                        {{ rooms|join(', ') }}
+                                    {% else %} - {% endif %}
+                                </td>
+                            </tr>
+                            
+                            <tr>
+                                <td>Dọn phòng ở (OD)</td>
+                                <td class="text-center">{{ stats['dọn phòng ở'] }}</td>
+                                <td>
+                                    {% if report_data %}
+                                        {% set rooms = [] %}
+                                        {% for item in report_data %}
+                                            {% if item.user_name == staff and item.action_type == 'dọn phòng ở' and item.new_status == 'oc' %}
+                                                {% set _ = rooms.append(item.room_no) %}
+                                            {% endif %}
+                                        {% endfor %}
+                                        {{ rooms|join(', ') }}
+                                    {% else %} - {% endif %}
+                                </td>
+                            </tr>
+                            
+                            <tr>
+                                <td>DND (Không làm phiền)</td>
+                                <td class="text-center">
+                                    {% if report_data %}
+                                        {% set dnd_count = 0 %}
+                                        {% for item in report_data %}
+                                            {% if item.user_name == staff and item.new_status == 'dnd' %}
+                                                {% set dnd_count = dnd_count + 1 %}
+                                            {% endif %}
+                                        {% endfor %}
+                                        {{ dnd_count }}
+                                    {% else %} 0 {% endif %}
+                                </td>
+                                <td>
+                                    {% if report_data %}
+                                        {% set rooms = [] %}
+                                        {% for item in report_data %}
+                                            {% if item.user_name == staff and item.new_status == 'dnd' %}
+                                                {% set _ = rooms.append(item.room_no) %}
+                                            {% endif %}
+                                        {% endfor %}
+                                        {{ rooms|join(', ') }}
+                                    {% else %} - {% endif %}
+                                </td>
+                            </tr>
+                            
+                            <tr>
+                                <td>NN (Không nhu cầu)</td>
+                                <td class="text-center">
+                                    {% if report_data %}
+                                        {% set nn_count = 0 %}
+                                        {% for item in report_data %}
+                                            {% if item.user_name == staff and item.new_status == 'nn' %}
+                                                {% set nn_count = nn_count + 1 %}
+                                            {% endif %}
+                                        {% endfor %}
+                                        {{ nn_count }}
+                                    {% else %} 0 {% endif %}
+                                </td>
+                                <td>
+                                    {% if report_data %}
+                                        {% set rooms = [] %}
+                                        {% for item in report_data %}
+                                            {% if item.user_name == staff and item.new_status == 'nn' %}
+                                                {% set _ = rooms.append(item.room_no) %}
+                                            {% endif %}
+                                        {% endfor %}
+                                        {{ rooms|join(', ') }}
+                                    {% else %} - {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="4" class="text-center" style="padding: 20px;">
+                                <em>Không có dữ liệu báo cáo.</em>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="print-footer">
+            <div class="signature-box">
+                <strong>Người lập báo cáo</strong>
+                <p>(Ký & Ghi rõ họ tên)</p>
+            </div>
+            <div class="signature-box">
+                <strong>Giám sát Housekeeping</strong>
+                <p>(Ký & Ghi rõ họ tên)</p>
+            </div>
         </div>
 
-        <!-- Footer -->
-        <div class="text-center mt-4 text-muted small">
-            Báo cáo được tạo tự động từ Hệ thống Quản lý Housekeeping Kamala
+        <div class="no-print text-center mt-5 mb-5">
+            <button class="btn btn-dark" onclick="window.print()">🖨️ In Báo Cáo Ngay</button>
+            <button class="btn btn-outline-secondary ms-2" onclick="window.close()">Đóng</button>
         </div>
     </div>
-
-    <!-- Bootstrap & Font Awesome -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
 </body>
 </html>
