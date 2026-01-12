@@ -61,8 +61,8 @@ class Config:
     
     # ==================== APPLICATION SETTINGS ====================
     DEPARTMENT_CODE = os.environ.get('DEPARTMENT_CODE', '123')
-    HK_REPORT_START_HOUR = 8
-    HK_REPORT_START_MINUTE = 15
+    HK_REPORT_START_HOUR = 1
+    HK_REPORT_START_MINUTE = 00
     
     # Backup configuration
     BACKUP_RETENTION_DAYS = 30
