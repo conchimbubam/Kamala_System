@@ -549,6 +549,78 @@ def create_app():
                 'error': f'Lỗi cập nhật phòng: {str(e)}'
             }), 500
 
+    @app.route('/api/rooms/bulk-update', methods=['POST'])
+    @login_required
+    @fo_required
+    def bulk_update_rooms():
+        """API endpoint để cập nhật hàng loạt trạng thái phòng (chỉ FO)"""
+        try:
+            data = request.get_json()
+            updates = data.get('updates', [])
+            
+            if not updates:
+                return jsonify({
+                    'success': False,
+                    'error': 'Không có dữ liệu cập nhật'
+                }), 400
+            
+            user_info = session.get('user_info', {})
+            user_info_str = f"{user_info.get('name', 'Unknown')} ({user_info.get('department', 'Unknown')})"
+            
+            success_count = 0
+            failed_rooms = []
+            
+            for update in updates:
+                room_no = update.get('roomNo')
+                new_status = update.get('newStatus')
+                
+                if not room_no or not new_status:
+                    failed_rooms.append({'room': room_no, 'error': 'Thiếu thông tin'})
+                    continue
+                
+                # Lấy thông tin phòng hiện tại
+                current_room = app.data_processor.get_room_by_number(room_no)
+                if not current_room:
+                    failed_rooms.append({'room': room_no, 'error': 'Không tìm thấy phòng'})
+                    continue
+                
+                old_status = current_room.get('roomStatus', '')
+                
+                # Cập nhật trạng thái phòng
+                updated_data = {'roomStatus': new_status}
+                success = app.data_processor.update_room_data(room_no, updated_data, user_info_str)
+                
+                if success:
+                    success_count += 1
+                    # Ghi log thay đổi trạng thái
+                    app.hk_logger.log_room_status_change(
+                        room_no,
+                        old_status,
+                        new_status,
+                        user_info.get('name', 'Unknown'),
+                        user_info.get('department', 'Unknown')
+                    )
+                else:
+                    failed_rooms.append({'room': room_no, 'error': 'Không thể cập nhật'})
+            
+            logger.info(f"Bulk update by {user_info_str}: {success_count}/{len(updates)} rooms updated")
+            
+            return jsonify({
+                'success': True,
+                'message': f'Đã cập nhật {success_count}/{len(updates)} phòng',
+                'updated_count': success_count,
+                'failed_count': len(failed_rooms),
+                'failed_rooms': failed_rooms,
+                'timestamp': datetime.now().isoformat()
+            })
+            
+        except Exception as e:
+            logger.error(f"Error in bulk update: {e}")
+            return jsonify({
+                'success': False,
+                'error': f'Lỗi cập nhật hàng loạt: {str(e)}'
+            }), 500
+
     @app.route('/api/file-info')
     @login_required
     def get_file_info():
