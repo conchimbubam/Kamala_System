@@ -75,7 +75,7 @@
         }
         
         .status-cell, .arr-cell {
-            width: 100px;
+            width: 120px;
         }
         
         .guest-cell {
@@ -167,17 +167,14 @@
             font-style: italic;
         }
         
-        .vacant-room {
-            background-color: rgba(13, 110, 253, 0.05) !important;
-        }
-        
-        .occupied-room {
-            background-color: rgba(253, 193, 7, 0.05) !important;
-        }
-        
-        .locked-room {
-            background-color: rgba(220, 53, 69, 0.05) !important;
-        }
+        .vd-room { background-color: rgba(13, 110, 253, 0.05) !important; }
+        .vc-room { background-color: rgba(25, 135, 84, 0.05) !important; }
+        .od-room { background-color: rgba(253, 193, 7, 0.05) !important; }
+        .oc-room { background-color: rgba(25, 135, 84, 0.1) !important; }
+        .dnd-room { background-color: rgba(108, 117, 125, 0.05) !important; }
+        .nn-room { background-color: rgba(111, 66, 193, 0.05) !important; }
+        .lock-room { background-color: rgba(220, 53, 69, 0.05) !important; }
+        .ip-room { background-color: rgba(13, 202, 240, 0.05) !important; }
         
         .bulk-actions-row {
             background: #f8f9fa;
@@ -191,6 +188,15 @@
             padding: 3px 8px;
             border-radius: 10px;
         }
+        
+        .status-color-vd { background-color: #0d6efd; color: white; }
+        .status-color-vc { background-color: #198754; color: white; }
+        .status-color-od { background-color: #fd7e14; color: white; }
+        .status-color-oc { background-color: #20c997; color: white; }
+        .status-color-dnd { background-color: #6c757d; color: white; }
+        .status-color-nn { background-color: #6f42c1; color: white; }
+        .status-color-lock { background-color: #dc3545; color: white; }
+        .status-color-ip { background-color: #0dcaf0; color: black; }
     </style>
 </head>
 <body>
@@ -225,29 +231,22 @@
         </h5>
         
         <div class="row g-3">
-            <div class="col-md-3">
-                <label class="form-label">Tình trạng FO</label>
-                <select class="form-select form-select-sm bulk-fo-status" id="bulkFoStatus">
-                    <option value="">-- Chọn tình trạng FO --</option>
-                    <option value="vd">Vacant (Trống)</option>
-                    <option value="od">Occupied (Có khách)</option>
-                    <option value="lock">Lock (Khóa)</option>
+            <div class="col-md-4">
+                <label class="form-label">Tình trạng phòng</label>
+                <select class="form-select form-select-sm bulk-room-status" id="bulkRoomStatus">
+                    <option value="">-- Chọn tình trạng --</option>
+                    <option value="VD">VD - Vacant Dirty (Trống/Bẩn)</option>
+                    <option value="VC">VC - Vacant Clean (Trống/Sạch)</option>
+                    <option value="OD">OD - Occupied Dirty (Có khách/Bẩn)</option>
+                    <option value="OC">OC - Occupied Clean (Có khách/Sạch)</option>
+                    <option value="DND">DND - Do Not Disturb (Không làm phiền)</option>
+                    <option value="NN">NN - No Need Cleaning (Không cần dọn)</option>
+                    <option value="LOCK">LOCK - Phòng khóa</option>
+                    <option value="IP">IP - Inspected (Đã kiểm tra)</option>
                 </select>
             </div>
             
             <div class="col-md-3">
-                <label class="form-label">Tình trạng HK</label>
-                <select class="form-select form-select-sm bulk-hk-status" id="bulkHkStatus">
-                    <option value="">-- Chọn tình trạng HK --</option>
-                    <option value="dirty">Dirty (Bẩn)</option>
-                    <option value="clean">Clean (Sạch)</option>
-                    <option value="inspected">Inspected (Đã kiểm)</option>
-                    <option value="dnd">DND (Không làm phiền)</option>
-                    <option value="nn">NN (Không dọn)</option>
-                </select>
-            </div>
-            
-            <div class="col-md-2">
                 <div class="form-check mt-4 pt-2">
                     <input class="form-check-input bulk-arr-check" type="checkbox" id="bulkArrCheck">
                     <label class="form-check-label" for="bulkArrCheck">
@@ -256,7 +255,7 @@
                 </div>
             </div>
             
-            <div class="col-md-4">
+            <div class="col-md-5">
                 <div class="d-flex flex-column flex-md-row gap-2 justify-content-end">
                     <div class="text-end">
                         <button type="button" class="btn btn-save-all" onclick="saveAllChanges()">
@@ -283,12 +282,14 @@
         <div class="bulk-actions-row mt-3">
             <div class="d-flex flex-wrap gap-2 align-items-center">
                 <small class="text-muted me-2"><strong>Chú thích trạng thái:</strong></small>
-                <span class="badge bg-primary status-badge">VD = Vacant Dirty (Trống/Bẩn)</span>
-                <span class="badge bg-light text-dark status-badge">VC = Vacant Clean (Trống/Sạch)</span>
-                <span class="badge bg-dark status-badge">OD = Occupied Dirty (Có khách/Bẩn)</span>
-                <span class="badge bg-warning status-badge">OC = Occupied Clean (Có khách/Sạch)</span>
-                <span class="badge bg-danger status-badge">Lock = Khóa phòng</span>
-                <span class="badge bg-success status-badge">IP = Đã kiểm tra</span>
+                <span class="badge status-color-vd status-badge">VD = Vacant Dirty (Trống/Bẩn)</span>
+                <span class="badge status-color-vc status-badge">VC = Vacant Clean (Trống/Sạch)</span>
+                <span class="badge status-color-od status-badge">OD = Occupied Dirty (Có khách/Bẩn)</span>
+                <span class="badge status-color-oc status-badge">OC = Occupied Clean (Có khách/Sạch)</span>
+                <span class="badge status-color-dnd status-badge">DND = Không làm phiền</span>
+                <span class="badge status-color-nn status-badge">NN = Không cần dọn</span>
+                <span class="badge status-color-lock status-badge">LOCK = Khóa phòng</span>
+                <span class="badge status-color-ip status-badge">IP = Đã kiểm tra</span>
                 <span class="badge bg-warning text-dark status-badge">/ARR = Có khách đến</span>
             </div>
         </div>
@@ -304,8 +305,7 @@
                             <input type="checkbox" class="form-check-input" id="selectAllRooms">
                         </th>
                         <th class="room-number-cell">Phòng</th>
-                        <th class="status-cell">Tình trạng FO</th>
-                        <th class="status-cell">Tình trạng HK</th>
+                        <th class="status-cell">Tình trạng</th>
                         <th class="guest-cell">Khách hiện tại</th>
                         <th class="arr-cell">ARR</th>
                         <th class="guest-cell">Khách mới (ARR)</th>
@@ -384,7 +384,7 @@
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" id="confirmVacantClear">
                         <label class="form-check-label" for="confirmVacantClear">
-                            Tôi hiểu rằng phòng chuyển sang <strong>Vacant</strong> sẽ xóa thông tin khách hiện tại
+                            Tôi hiểu rằng phòng chuyển sang <strong>Vacant (VD/VC)</strong> sẽ xóa thông tin khách hiện tại
                         </label>
                     </div>
                 </div>
@@ -436,30 +436,16 @@
                 });
             });
             
-            // Bulk FO status change
-            document.getElementById('bulkFoStatus').addEventListener('change', function() {
+            // Bulk room status change
+            document.getElementById('bulkRoomStatus').addEventListener('change', function() {
                 const selectedRooms = getSelectedRooms();
                 const value = this.value;
                 
                 selectedRooms.forEach(roomId => {
-                    const foSelect = document.getElementById(`fo-${roomId}`);
-                    if (foSelect) {
-                        foSelect.value = value;
-                        handleFoStatusChange(roomId, value);
-                    }
-                });
-            });
-            
-            // Bulk HK status change
-            document.getElementById('bulkHkStatus').addEventListener('change', function() {
-                const selectedRooms = getSelectedRooms();
-                const value = this.value;
-                
-                selectedRooms.forEach(roomId => {
-                    const hkSelect = document.getElementById(`hk-${roomId}`);
-                    if (hkSelect) {
-                        hkSelect.value = value;
-                        markRoomModified(roomId);
+                    const statusSelect = document.getElementById(`status-${roomId}`);
+                    if (statusSelect) {
+                        statusSelect.value = value;
+                        handleRoomStatusChange(roomId, value);
                     }
                 });
             });
@@ -517,19 +503,11 @@
                     roomCheckbox.addEventListener('change', updateSelectedCount);
                 }
                 
-                // FO status select
-                const foSelect = document.getElementById(`fo-${roomNo}`);
-                if (foSelect) {
-                    foSelect.addEventListener('change', function() {
-                        handleFoStatusChange(roomNo, this.value);
-                    });
-                }
-                
-                // HK status select
-                const hkSelect = document.getElementById(`hk-${roomNo}`);
-                if (hkSelect) {
-                    hkSelect.addEventListener('change', function() {
-                        markRoomModified(roomNo);
+                // Room status select
+                const statusSelect = document.getElementById(`status-${roomNo}`);
+                if (statusSelect) {
+                    statusSelect.addEventListener('change', function() {
+                        handleRoomStatusChange(roomNo, this.value);
                     });
                 }
                 
@@ -550,23 +528,32 @@
         // Create room row HTML
         function createRoomRow(room) {
             const roomNo = room.roomNo;
-            const currentStatus = room.roomStatus;
-            
-            // Current guest info
+            const roomStatus = room.roomStatus || 'VD';
             const currentGuest = room.currentGuest || {};
             const newGuest = room.newGuest || {};
             
-            // Determine FO and HK status from roomStatus
-            const { foStatus, hkStatus } = parseRoomStatus(currentStatus);
+            // Parse ARR status
+            const isArrival = roomStatus.includes('/arr') || 
+                             (roomStatus === 'VD' && newGuest.name) ||
+                             (roomStatus === 'VC' && newGuest.name);
             
-            // Check if has ARR (arrival)
-            const hasArr = currentStatus.includes('/arr') || (newGuest && newGuest.name && newGuest.name.trim() !== '');
+            // Extract base status (remove /arr if exists)
+            let baseStatus = roomStatus;
+            if (roomStatus.includes('/arr')) {
+                baseStatus = roomStatus.split('/')[0];
+            }
+            
+            // Validate base status
+            const validStatuses = ['VD', 'VC', 'OD', 'OC', 'DND', 'NN', 'LOCK', 'IP'];
+            if (!validStatuses.includes(baseStatus)) {
+                baseStatus = 'VD'; // Default to VD if invalid
+            }
             
             // Determine if room is currently vacant
-            const isCurrentlyVacant = foStatus === 'vd';
+            const isCurrentlyVacant = baseStatus === 'VD' || baseStatus === 'VC';
             
             return `
-                <tr id="row-${roomNo}" class="${getRoomRowClass(foStatus)}">
+                <tr id="row-${roomNo}" class="${getRoomRowClass(baseStatus)}">
                     <td class="checkbox-cell">
                         <input type="checkbox" class="form-check-input room-checkbox" id="room-${roomNo}">
                     </td>
@@ -574,21 +561,21 @@
                         <span class="badge bg-dark">${roomNo}</span>
                     </td>
                     <td class="status-cell">
-                        <select class="form-select form-select-sm fo-status" id="fo-${roomNo}">
-                            <option value="vd" ${foStatus === 'vd' ? 'selected' : ''}>Vacant</option>
-                            <option value="od" ${foStatus === 'od' ? 'selected' : ''}>Occupied</option>
-                            <option value="lock" ${foStatus === 'lock' ? 'selected' : ''}>Lock</option>
+                        <select class="form-select form-select-sm room-status" id="status-${roomNo}">
+                            <option value="VD" ${baseStatus === 'VD' ? 'selected' : ''}>VD - Vacant Dirty</option>
+                            <option value="VC" ${baseStatus === 'VC' ? 'selected' : ''}>VC - Vacant Clean</option>
+                            <option value="OD" ${baseStatus === 'OD' ? 'selected' : ''}>OD - Occupied Dirty</option>
+                            <option value="OC" ${baseStatus === 'OC' ? 'selected' : ''}>OC - Occupied Clean</option>
+                            <option value="DND" ${baseStatus === 'DND' ? 'selected' : ''}>DND - Do Not Disturb</option>
+                            <option value="NN" ${baseStatus === 'NN' ? 'selected' : ''}>NN - No Need Cleaning</option>
+                            <option value="LOCK" ${baseStatus === 'LOCK' ? 'selected' : ''}>LOCK - Phòng khóa</option>
+                            <option value="IP" ${baseStatus === 'IP' ? 'selected' : ''}>IP - Inspected</option>
                         </select>
-                    </td>
-                    <td class="status-cell">
-                        <select class="form-select form-select-sm hk-status" id="hk-${roomNo}">
-                            <option value="">-- Chọn --</option>
-                            <option value="dirty" ${hkStatus === 'dirty' ? 'selected' : ''}>Dirty</option>
-                            <option value="clean" ${hkStatus === 'clean' ? 'selected' : ''}>Clean</option>
-                            <option value="inspected" ${hkStatus === 'inspected' ? 'selected' : ''}>Inspected</option>
-                            <option value="dnd" ${hkStatus === 'dnd' ? 'selected' : ''}>DND</option>
-                            <option value="nn" ${hkStatus === 'nn' ? 'selected' : ''}>NN</option>
-                        </select>
+                        <small class="d-block mt-1">
+                            <span class="badge ${getStatusBadgeClass(baseStatus)}">
+                                ${getStatusDisplayName(baseStatus)}
+                            </span>
+                        </small>
                     </td>
                     <td class="guest-cell" id="current-guest-${roomNo}">
                         ${isCurrentlyVacant ? 
@@ -598,7 +585,7 @@
                     <td class="arr-cell">
                         <div class="form-check">
                             <input class="form-check-input arr-checkbox" type="checkbox" 
-                                   id="arr-${roomNo}" ${hasArr ? 'checked' : ''}>
+                                   id="arr-${roomNo}" ${isArrival ? 'checked' : ''}>
                             <label class="form-check-label" for="arr-${roomNo}">
                                 <span class="badge bg-warning text-dark">ARR</span>
                             </label>
@@ -611,19 +598,19 @@
                                        id="new-name-${roomNo}" 
                                        placeholder="Tên khách mới"
                                        value="${newGuest.name || ''}"
-                                       ${hasArr ? '' : 'disabled'}>
+                                       ${isArrival ? '' : 'disabled'}>
                             </div>
                             <div class="col-6">
                                 <input type="date" class="form-control form-control-sm new-guest-input" 
                                        id="new-checkin-${roomNo}" 
                                        value="${newGuest.checkIn || ''}"
-                                       ${hasArr ? '' : 'disabled'}>
+                                       ${isArrival ? '' : 'disabled'}>
                             </div>
                             <div class="col-6">
                                 <input type="date" class="form-control form-control-sm new-guest-input" 
                                        id="new-checkout-${roomNo}" 
                                        value="${newGuest.checkOut || ''}"
-                                       ${hasArr ? '' : 'disabled'}>
+                                       ${isArrival ? '' : 'disabled'}>
                             </div>
                             <div class="col-12">
                                 <input type="number" class="form-control form-control-sm new-guest-input" 
@@ -631,7 +618,7 @@
                                        placeholder="Số khách"
                                        min="1" max="10"
                                        value="${newGuest.pax || ''}"
-                                       ${hasArr ? '' : 'disabled'}>
+                                       ${isArrival ? '' : 'disabled'}>
                             </div>
                         </div>
                     </td>
@@ -655,61 +642,73 @@
             `;
         }
         
-        // Get room row CSS class based on FO status
-        function getRoomRowClass(foStatus) {
-            switch(foStatus) {
-                case 'vd': return 'vacant-room';
-                case 'od': return 'occupied-room';
-                case 'lock': return 'locked-room';
+        // Get room row CSS class based on status
+        function getRoomRowClass(status) {
+            switch(status) {
+                case 'VD': return 'vd-room';
+                case 'VC': return 'vc-room';
+                case 'OD': return 'od-room';
+                case 'OC': return 'oc-room';
+                case 'DND': return 'dnd-room';
+                case 'NN': return 'nn-room';
+                case 'LOCK': return 'lock-room';
+                case 'IP': return 'ip-room';
                 default: return '';
             }
         }
         
-        // Parse room status into FO and HK components
-        function parseRoomStatus(status) {
-            let foStatus = '';
-            let hkStatus = '';
-            
-            if (status === 'lock') {
-                foStatus = 'lock';
-                hkStatus = '';
-            } else if (status === 'ip') {
-                foStatus = '';
-                hkStatus = 'inspected';
-            } else if (status === 'vd' || status === 'vd/arr') {
-                foStatus = 'vd';
-                hkStatus = 'dirty';
-            } else if (status === 'vc' || status === 'vc/arr') {
-                foStatus = 'vd';
-                hkStatus = 'clean';
-            } else if (status === 'od' || status === 'do' || status === 'do/arr') {
-                foStatus = 'od';
-                hkStatus = 'dirty';
-            } else if (status === 'oc') {
-                foStatus = 'od';
-                hkStatus = 'clean';
-            } else if (status === 'dnd') {
-                foStatus = 'od';
-                hkStatus = 'dnd';
-            } else if (status === 'nn') {
-                foStatus = 'od';
-                hkStatus = 'nn';
+        // Get status badge CSS class
+        function getStatusBadgeClass(status) {
+            switch(status) {
+                case 'VD': return 'status-color-vd';
+                case 'VC': return 'status-color-vc';
+                case 'OD': return 'status-color-od';
+                case 'OC': return 'status-color-oc';
+                case 'DND': return 'status-color-dnd';
+                case 'NN': return 'status-color-nn';
+                case 'LOCK': return 'status-color-lock';
+                case 'IP': return 'status-color-ip';
+                default: return 'bg-secondary';
             }
-            
-            return { foStatus, hkStatus };
         }
         
-        // Handle FO status change
-        function handleFoStatusChange(roomNo, newFoStatus) {
+        // Get status display name
+        function getStatusDisplayName(status) {
+            const statusMap = {
+                'VD': 'Vacant Dirty',
+                'VC': 'Vacant Clean', 
+                'OD': 'Occupied Dirty',
+                'OC': 'Occupied Clean',
+                'DND': 'Do Not Disturb',
+                'NN': 'No Need Cleaning',
+                'LOCK': 'Phòng khóa',
+                'IP': 'Inspected'
+            };
+            return statusMap[status] || status;
+        }
+        
+        // Handle room status change
+        function handleRoomStatusChange(roomNo, newStatus) {
             const row = document.getElementById(`row-${roomNo}`);
             
             // Update row class
-            row.className = getRoomRowClass(newFoStatus);
+            row.className = getRoomRowClass(newStatus);
             
-            // If changing to Vacant, clear current guest info
-            if (newFoStatus === 'vd') {
+            // Update status badge
+            const badge = row.querySelector('.badge');
+            if (badge) {
+                badge.className = `badge ${getStatusBadgeClass(newStatus)}`;
+                badge.textContent = getStatusDisplayName(newStatus);
+            }
+            
+            // If changing to Vacant (VD/VC), clear current guest info
+            if (newStatus === 'VD' || newStatus === 'VC') {
                 document.getElementById(`current-guest-${roomNo}`).innerHTML = 
                     '<div class="guest-empty">Trống</div>';
+                
+                // Also disable ARR if changing to Vacant?
+                // This depends on business logic - can vacant rooms have arrivals?
+                // For now, we'll leave ARR as is
             }
             
             markRoomModified(roomNo);
@@ -748,23 +747,15 @@
                 return;
             }
             
-            const bulkFoStatus = document.getElementById('bulkFoStatus').value;
-            const bulkHkStatus = document.getElementById('bulkHkStatus').value;
+            const bulkRoomStatus = document.getElementById('bulkRoomStatus').value;
             const bulkArr = document.getElementById('bulkArrCheck').checked;
             
             selectedRooms.forEach(roomId => {
-                if (bulkFoStatus) {
-                    const foSelect = document.getElementById(`fo-${roomId}`);
-                    if (foSelect) {
-                        foSelect.value = bulkFoStatus;
-                        handleFoStatusChange(roomId, bulkFoStatus);
-                    }
-                }
-                
-                if (bulkHkStatus) {
-                    const hkSelect = document.getElementById(`hk-${roomId}`);
-                    if (hkSelect) {
-                        hkSelect.value = bulkHkStatus;
+                if (bulkRoomStatus) {
+                    const statusSelect = document.getElementById(`status-${roomId}`);
+                    if (statusSelect) {
+                        statusSelect.value = bulkRoomStatus;
+                        handleRoomStatusChange(roomId, bulkRoomStatus);
                     }
                 }
                 
@@ -782,8 +773,7 @@
             showToast(`Đã áp dụng thay đổi cho ${selectedRooms.length} phòng`, 'success');
             
             // Reset bulk controls
-            document.getElementById('bulkFoStatus').value = '';
-            document.getElementById('bulkHkStatus').value = '';
+            document.getElementById('bulkRoomStatus').value = '';
             document.getElementById('bulkArrCheck').checked = false;
         }
         
@@ -891,38 +881,19 @@
         
         // Collect room data for update
         function collectRoomData(roomNo) {
-            const foStatus = document.getElementById(`fo-${roomNo}`).value;
-            const hkStatus = document.getElementById(`hk-${roomNo}`).value;
+            const roomStatus = document.getElementById(`status-${roomNo}`).value;
             const hasArr = document.getElementById(`arr-${roomNo}`).checked;
             
             // Build final roomStatus
-            let roomStatus = '';
+            let finalRoomStatus = roomStatus;
             
-            if (foStatus === 'lock') {
-                roomStatus = 'lock';
-            } else if (hkStatus === 'inspected') {
-                roomStatus = 'ip';
-            } else if (foStatus === 'vd') {
-                if (hkStatus === 'dirty') {
-                    roomStatus = hasArr ? 'vd/arr' : 'vd';
-                } else if (hkStatus === 'clean') {
-                    roomStatus = hasArr ? 'vc/arr' : 'vc';
-                }
-            } else if (foStatus === 'od') {
-                if (hkStatus === 'dirty') {
-                    roomStatus = hasArr ? 'do/arr' : 'do';
-                } else if (hkStatus === 'clean') {
-                    roomStatus = 'oc';
-                } else if (hkStatus === 'dnd') {
-                    roomStatus = 'dnd';
-                } else if (hkStatus === 'nn') {
-                    roomStatus = 'nn';
-                }
-            }
-            
-            // If roomStatus is empty, don't send update
-            if (!roomStatus) {
-                return null;
+            // Add /arr suffix if ARR is checked AND room status allows it
+            // Vacant rooms (VD/VC) can have ARR - means guest is arriving
+            // Occupied rooms (OD/OC) can have ARR - means guest is extending stay or new guest arriving
+            // DND, NN, LOCK, IP typically don't have ARR
+            if (hasArr && roomStatus !== 'DND' && roomStatus !== 'NN' && 
+                roomStatus !== 'LOCK' && roomStatus !== 'IP') {
+                finalRoomStatus = roomStatus + '/arr';
             }
             
             // Collect new guest info if ARR is checked
@@ -943,7 +914,7 @@
             
             // Prepare update data
             const updatedData = {
-                roomStatus: roomStatus
+                roomStatus: finalRoomStatus
             };
             
             // Add newGuest if exists
@@ -954,8 +925,8 @@
                 updatedData.newGuest = null;
             }
             
-            // If changing to Vacant, clear current guest
-            if (foStatus === 'vd') {
+            // If changing to Vacant (VD/VC), clear current guest
+            if (roomStatus === 'VD' || roomStatus === 'VC') {
                 updatedData.currentGuest = {};
             }
             
@@ -1070,21 +1041,23 @@
                 <strong>Hướng dẫn sử dụng chỉnh sửa hàng loạt:</strong><br><br>
                 1. <strong>Chọn nhiều phòng:</strong> Tick chọn các phòng cần chỉnh sửa<br>
                 2. <strong>Điều chỉnh hàng loạt:</strong> Dùng công cụ ở trên để áp dụng cùng lúc cho các phòng được chọn<br>
-                3. <strong>Tình trạng FO:</strong><br>
-                   • Vacant (Trống): Khi chọn, thông tin khách hiện tại sẽ bị xóa<br>
-                   • Occupied (Có khách): Giữ nguyên hoặc thêm thông tin khách<br>
-                   • Lock (Khóa): Khóa phòng, không cho dọn<br>
-                4. <strong>Tình trạng HK:</strong><br>
-                   • Dirty (Bẩn): Phòng cần dọn<br>
-                   • Clean (Sạch): Phòng đã dọn xong<br>
-                   • Inspected (Đã kiểm): Supervisor đã kiểm tra<br>
-                   • DND (Không làm phiền): Khách không muốn bị làm phiền<br>
-                   • NN (Không dọn): Khách không muốn dọn phòng<br>
-                5. <strong>ARR (Có khách đến):</strong><br>
-                   • Khi bật: Nhập thông tin khách mới sẽ đến<br>
+                3. <strong>Tình trạng phòng:</strong><br>
+                   • <strong>VD (Vacant Dirty)</strong>: Phòng trống, cần dọn<br>
+                   • <strong>VC (Vacant Clean)</strong>: Phòng trống, đã dọn sạch<br>
+                   • <strong>OD (Occupied Dirty)</strong>: Phòng có khách, cần dọn<br>
+                   • <strong>OC (Occupied Clean)</strong>: Phòng có khách, đã dọn sạch<br>
+                   • <strong>DND (Do Not Disturb)</strong>: Khách không muốn bị làm phiền<br>
+                   • <strong>NN (No Need Cleaning)</strong>: Khách không muốn dọn phòng<br>
+                   • <strong>LOCK</strong>: Phòng bị khóa, không sử dụng<br>
+                   • <strong>IP (Inspected)</strong>: Supervisor đã kiểm tra phòng<br>
+                4. <strong>ARR (Có khách đến):</strong><br>
+                   • Khi bật: Nhập thông tin khách mới sẽ đến (cho phòng trống) hoặc khách mới (cho phòng có khách)<br>
                    • Khi tắt: Xóa thông tin khách mới<br>
-                6. <strong>Lưu thay đổi:</strong> Nhấn "Lưu tất cả thay đổi" để ghi nhận<br><br>
-                <em>Lưu ý: Các ô màu vàng là đã có thay đổi chưa lưu</em>
+                5. <strong>Lưu thay đổi:</strong> Nhấn "Lưu tất cả thay đổi" để ghi nhận<br><br>
+                <em>Lưu ý quan trọng:</em><br>
+                - Khi chuyển phòng sang <strong>VD hoặc VC</strong>, thông tin khách hiện tại sẽ bị xóa<br>
+                - Phòng <strong>LOCK, DND, NN, IP</strong> không thể có ARR<br>
+                - Các ô màu vàng là đã có thay đổi chưa lưu
             `;
             
             // Create a modal for help
