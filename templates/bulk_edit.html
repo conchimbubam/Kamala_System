@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Custom CSS -->
     <style>
+        /* Giữ nguyên CSS cũ */
         body {
             background-color: #f5f5f5;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -201,6 +202,7 @@
                         <p class="card-text text-muted">
                             Chức năng này chỉ dành cho bộ phận Front Office (FO). 
                             Chọn nhiều phòng và cập nhật trạng thái đồng loạt.
+                            <strong>Lưu ý:</strong> Khi chuyển trạng thái sang VD/VC, thông tin khách hiện tại sẽ bị xóa.
                         </p>
                     </div>
                 </div>
@@ -314,7 +316,7 @@
                                 </button>
                             </div>
                             <div class="form-text mt-1">
-                                Cập nhật sẽ được áp dụng cho tất cả phòng đã chọn
+                                <strong>Lưu ý:</strong> Khi chuyển sang VD/VC, thông tin khách hiện tại sẽ bị xóa.
                             </div>
                         </div>
                     </div>
@@ -421,12 +423,18 @@
                                     <th>Số phòng</th>
                                     <th>Trạng thái hiện tại</th>
                                     <th>Trạng thái mới</th>
+                                    <th>Thay đổi</th>
                                 </tr>
                             </thead>
                             <tbody id="preview-table-body">
                                 <!-- Preview data will be populated by JavaScript -->
                             </tbody>
                         </table>
+                    </div>
+                    
+                    <div class="alert alert-warning mt-3" id="vd-vc-warning" style="display: none;">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Cảnh báo:</strong> Khi chuyển sang VD/VC, thông tin khách hiện tại sẽ bị xóa!
                     </div>
                     
                     <div class="alert alert-warning mt-3">
@@ -903,10 +911,20 @@
             previewTableBody.innerHTML = '';
             
             let count = 0;
+            let showVdVcWarning = false;
+            
+            // Check if any room will have guest info cleared
             allRooms.forEach(room => {
                 if (selectedRooms.has(room.roomNo)) {
                     count++;
                     const row = document.createElement('tr');
+                    const currentGuestName = room.currentGuest.name || '(Không có)';
+                    const willClearGuest = (newStatus === 'vd' || newStatus === 'vc') && currentGuestName !== '(Không có)';
+                    
+                    if (willClearGuest) {
+                        showVdVcWarning = true;
+                    }
+                    
                     row.innerHTML = `
                         <td class="fw-bold">${room.roomNo}</td>
                         <td>
@@ -919,12 +937,25 @@
                                 ${finalStatus}
                             </span>
                         </td>
+                        <td>
+                            ${willClearGuest ? 
+                              '<span class="badge bg-warning text-dark"><i class="fas fa-user-times me-1"></i>Xóa khách</span>' : 
+                              '<span class="badge bg-secondary">Chỉ đổi trạng thái</span>'}
+                        </td>
                     `;
                     previewTableBody.appendChild(row);
                 }
             });
             
             document.getElementById('preview-count').textContent = count;
+            
+            // Show/hide VD/VC warning
+            const warningElement = document.getElementById('vd-vc-warning');
+            if (showVdVcWarning) {
+                warningElement.style.display = 'block';
+            } else {
+                warningElement.style.display = 'none';
+            }
             
             // Show modal
             const modal = new bootstrap.Modal(document.getElementById('bulkUpdateModal'));
@@ -942,10 +973,27 @@
             }
             
             // Prepare update data
-            const updates = Array.from(selectedRooms).map(roomNo => ({
-                roomNo: roomNo,
-                newStatus: finalStatus
-            }));
+            const updates = Array.from(selectedRooms).map(roomNo => {
+                // If changing to VD/VC, we need to clear current guest info
+                const updateData = {
+                    roomNo: roomNo,
+                    updatedData: {
+                        roomStatus: finalStatus
+                    }
+                };
+                
+                // If status is VD or VC, add empty currentGuest data to clear it
+                if (newStatus === 'vd' || newStatus === 'vc') {
+                    updateData.updatedData.currentGuest = {
+                        name: '',
+                        checkIn: '',
+                        checkOut: '',
+                        pax: 0
+                    };
+                }
+                
+                return updateData;
+            });
             
             // Close preview modal
             const previewModal = bootstrap.Modal.getInstance(document.getElementById('bulkUpdateModal'));
@@ -955,43 +1003,60 @@
             applyBulkBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Đang xử lý...';
             applyBulkBtn.disabled = true;
             
-            // Send bulk update request
-            fetch('/api/rooms/bulk-update', {
+            // Send bulk update requests
+            updateRoomsSequentially(updates, 0);
+        }
+        
+        function updateRoomsSequentially(updates, index) {
+            if (index >= updates.length) {
+                // All updates completed
+                applyBulkBtn.innerHTML = '<i class="fas fa-save me-2"></i>Áp dụng cho phòng đã chọn';
+                updateApplyButtonState();
+                
+                // Show success modal
+                document.getElementById('success-message').textContent = 
+                    `Đã cập nhật thành công ${updates.length} phòng sang trạng thái "${updates[0]?.updatedData?.roomStatus || ''}"`;
+                
+                const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+                successModal.show();
+                
+                // Reload data after success
+                setTimeout(() => {
+                    loadRoomsData();
+                    clearSelection();
+                }, 1000);
+                
+                return;
+            }
+            
+            const update = updates[index];
+            
+            // Send individual update request
+            fetch('/api/rooms/update', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    updates: updates
-                })
+                body: JSON.stringify(update)
             })
             .then(response => response.json())
             .then(data => {
-                if (data.success) {
-                    // Show success modal
-                    document.getElementById('success-message').textContent = 
-                        `Đã cập nhật thành công ${updates.length} phòng sang trạng thái "${finalStatus}"`;
-                    
-                    const successModal = new bootstrap.Modal(document.getElementById('successModal'));
-                    successModal.show();
-                    
-                    // Reload data after success
-                    setTimeout(() => {
-                        loadRoomsData();
-                        clearSelection();
-                    }, 1000);
-                } else {
-                    showError(data.error || 'Không thể cập nhật trạng thái phòng');
+                if (!data.success) {
+                    console.error(`Failed to update room ${update.roomNo}:`, data.error);
+                    // Continue with next room even if one fails
                 }
+                
+                // Update progress in button
+                const progress = Math.round(((index + 1) / updates.length) * 100);
+                applyBulkBtn.innerHTML = `<i class="fas fa-spinner fa-spin me-2"></i>Đang xử lý... ${progress}%`;
+                
+                // Process next room
+                updateRoomsSequentially(updates, index + 1);
             })
             .catch(error => {
-                console.error('Error:', error);
-                showError('Lỗi kết nối đến server');
-            })
-            .finally(() => {
-                // Reset button state
-                applyBulkBtn.innerHTML = '<i class="fas fa-save me-2"></i>Áp dụng cho phòng đã chọn';
-                updateApplyButtonState();
+                console.error(`Error updating room ${update.roomNo}:`, error);
+                // Continue with next room
+                updateRoomsSequentially(updates, index + 1);
             });
         }
         
@@ -1004,74 +1069,6 @@
             const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
             errorModal.show();
         }
-        
-        // Add this API endpoint to app.py (bulk update endpoint)
-        // This function simulates the API call - you need to implement the actual endpoint
-        function simulateBulkUpdate(updates) {
-            return new Promise((resolve) => {
-                setTimeout(() => {
-                    resolve({
-                        success: true,
-                        message: `Đã cập nhật ${updates.length} phòng thành công`
-                    });
-                }, 1500);
-            });
-        }
-    </script>
-    
-    <!-- Note: You need to add this endpoint to app.py -->
-    <script>
-        // This is a placeholder for the bulk update endpoint you need to add to app.py
-        // Add this route to your Flask app:
-        /*
-        @app.route('/api/rooms/bulk-update', methods=['POST'])
-        @login_required
-        @fo_required
-        def bulk_update_rooms():
-            try:
-                data = request.get_json()
-                updates = data.get('updates', [])
-                
-                user_info = session.get('user_info', {})
-                user_info_str = f"{user_info.get('name', 'Unknown')} ({user_info.get('department', 'Unknown')})"
-                
-                success_count = 0
-                for update in updates:
-                    room_no = update.get('roomNo')
-                    new_status = update.get('newStatus')
-                    
-                    if room_no and new_status:
-                        # Update room status
-                        updated_data = {'roomStatus': new_status}
-                        success = app.data_processor.update_room_data(room_no, updated_data, user_info_str)
-                        
-                        if success:
-                            success_count += 1
-                            # Log the change
-                            current_room = app.data_processor.get_room_by_number(room_no)
-                            old_status = current_room.get('roomStatus', '')
-                            
-                            app.hk_logger.log_room_status_change(
-                                room_no,
-                                old_status,
-                                new_status,
-                                user_info.get('name', 'Unknown'),
-                                user_info.get('department', 'Unknown')
-                            )
-                
-                return jsonify({
-                    'success': True,
-                    'message': f'Đã cập nhật {success_count}/{len(updates)} phòng',
-                    'updated_count': success_count
-                })
-                
-            except Exception as e:
-                logger.error(f"Error in bulk update: {e}")
-                return jsonify({
-                    'success': False,
-                    'error': str(e)
-                }), 500
-        */
     </script>
 </body>
 </html>
