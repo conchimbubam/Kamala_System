@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chỉnh sửa hàng loạt - Kamala Housekeeping</title>
+    <title>Chỉnh sửa hàng loạt - Kamala Housekeeping Management System</title>
     
     <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -11,1064 +11,400 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Custom CSS -->
     <style>
-        /* Giữ nguyên CSS cũ */
         body {
-            background-color: #f5f5f5;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
-        .navbar-brand {
-            font-weight: 700;
-        }
-        
-        .main-container {
-            margin-top: 20px;
-            margin-bottom: 30px;
-        }
-        
-        .card {
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
-            border: none;
-        }
-        
-        .card-header {
-            background-color: #343a40;
-            color: white;
-            border-radius: 10px 10px 0 0 !important;
-            font-weight: 600;
-        }
-        
-        .table-container {
-            overflow-x: auto;
-            max-height: 70vh;
-            overflow-y: auto;
-        }
-        
-        .table th {
             background-color: #f8f9fa;
+            padding: 20px;
+        }
+        
+        .bulk-header {
+            background: linear-gradient(135deg, #2c3e50, #4a6491);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .bulk-controls {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .room-table-container {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .room-table {
+            margin: 0;
+            width: 100%;
+        }
+        
+        .room-table thead th {
+            background-color: #f8f9fa;
+            border-bottom: 2px solid #dee2e6;
             position: sticky;
             top: 0;
             z-index: 10;
         }
         
-        .table tbody tr {
-            transition: background-color 0.2s;
-        }
-        
-        .table tbody tr:hover {
-            background-color: #f1f5fd;
-        }
-        
-        .table tbody tr.selected {
-            background-color: #e8f4fd !important;
-        }
-        
-        .status-badge {
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-        
-        .status-vd { background-color: #d4edda; color: #155724; }
-        .status-vc { background-color: #cce5ff; color: #004085; }
-        .status-od { background-color: #fff3cd; color: #856404; }
-        .status-oc { background-color: #f8d7da; color: #721c24; }
-        .status-dnd { background-color: #e2e3e5; color: #383d41; }
-        .status-nn { background-color: #d1ecf1; color: #0c5460; }
-        .status-ip { background-color: #f5c6cb; color: #721c24; }
-        .status-do { background-color: #d6d8d9; color: #1b1e21; }
-        .status-lock { background-color: #f8d7da; color: #721c24; }
-        
-        .status-arr {
-            border: 2px solid #ffc107;
-        }
-        
-        .filter-badge {
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        
-        .filter-badge:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 3px 5px rgba(0, 0, 0, 0.1);
-        }
-        
-        .filter-badge.active {
-            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
-        }
-        
-        .selection-info {
-            background-color: #e7f3ff;
-            border-left: 4px solid #007bff;
-            padding: 12px 15px;
-            border-radius: 5px;
-            margin-bottom: 15px;
-        }
-        
-        .action-buttons .btn {
-            min-width: 120px;
-        }
-        
-        .bulk-action-form {
+        .room-table tbody tr:hover {
             background-color: #f8f9fa;
-            border-radius: 8px;
-            padding: 20px;
-            margin-top: 20px;
-            border: 1px solid #dee2e6;
         }
         
-        .checkbox-select-all {
-            transform: scale(1.2);
+        .room-table td, .room-table th {
+            vertical-align: middle;
+            padding: 12px 8px;
         }
         
-        .room-checkbox {
-            transform: scale(1.1);
+        .checkbox-cell {
+            width: 40px;
+            text-align: center;
         }
         
-        .guest-info {
-            max-width: 200px;
-            overflow: hidden;
-            text-overflow: ellipsis;
+        .room-number-cell {
+            width: 80px;
+            font-weight: bold;
+            background-color: #f8f9fa;
+        }
+        
+        .status-cell, .arr-cell {
+            width: 120px;
+        }
+        
+        .guest-cell {
+            min-width: 200px;
+        }
+        
+        .form-control-sm {
+            height: calc(1.5em + 0.5rem + 2px);
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+        }
+        
+        .form-select-sm {
+            padding: 0.25rem 2rem 0.25rem 0.5rem;
+            font-size: 0.875rem;
+        }
+        
+        .btn-apply-bulk {
+            background: linear-gradient(135deg, #0d6efd, #0b5ed7);
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 6px;
+            font-weight: 500;
             white-space: nowrap;
         }
         
-        .pagination-container {
-            display: flex;
-            justify-content: center;
-            margin-top: 20px;
+        .btn-apply-bulk:hover {
+            background: linear-gradient(135deg, #0b5ed7, #0a58ca);
+            color: white;
         }
         
-        @media (max-width: 768px) {
-            .table-container {
-                font-size: 14px;
-            }
-            
-            .action-buttons .btn {
-                margin-bottom: 5px;
-                width: 100%;
-            }
+        .btn-save-all {
+            background: linear-gradient(135deg, #198754, #157347);
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 6px;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        
+        .btn-save-all:hover {
+            background: linear-gradient(135deg, #157347, #146c43);
+            color: white;
+        }
+        
+        .form-check-input:checked {
+            background-color: #0d6efd;
+            border-color: #0d6efd;
+        }
+        
+        .scrollable-container {
+            max-height: 70vh;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+        }
+        
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        
+        .action-buttons {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .disabled-field {
+            background-color: #e9ecef;
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .guest-empty {
+            color: #6c757d;
+            font-style: italic;
+        }
+        
+        .status-vd { background-color: rgba(13, 110, 253, 0.05) !important; }
+        .status-vc { background-color: rgba(25, 135, 84, 0.05) !important; }
+        .status-od { background-color: rgba(220, 53, 69, 0.05) !important; }
+        .status-oc { background-color: rgba(255, 193, 7, 0.05) !important; }
+        .status-dnd { background-color: rgba(111, 66, 193, 0.05) !important; }
+        .status-nn { background-color: rgba(32, 201, 151, 0.05) !important; }
+        .status-lock { background-color: rgba(108, 117, 125, 0.1) !important; }
+        .status-ip { background-color: rgba(13, 202, 240, 0.05) !important; }
+        
+        .bulk-actions-row {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 15px;
+        }
+        
+        .status-badge {
+            font-size: 0.75em;
+            padding: 3px 8px;
+            border-radius: 10px;
+        }
+        
+        .modified-row {
+            background-color: #fff3cd !important;
+            position: relative;
+        }
+        
+        .modified-row::after {
+            content: "✎";
+            position: absolute;
+            right: 5px;
+            top: 5px;
+            color: #ffc107;
+            font-size: 12px;
         }
     </style>
 </head>
 <body>
-    <!-- Navigation -->
-    <nav class="navbar navbar-dark bg-dark sticky-top">
-        <div class="container-fluid">
-            <a href="/" class="navbar-brand mb-0 h1">
-                <i class="fas fa-hotel me-2"></i>KAMALA - Chỉnh sửa hàng loạt
-            </a>
-            <div class="navbar-text d-flex align-items-center">
-                {% if user %}
-                <div class="me-3 text-light">
-                    <small>Xin chào, <strong>{{ user.name }}</strong> ({{ user.department }})</small>
-                </div>
-                {% endif %}
-                
-                <div class="dropdown">
-                    <button class="btn btn-outline-light dropdown-toggle" type="button" id="actionsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="fas fa-bars"></i> Tác vụ
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="actionsDropdown">
-                        <li>
-                            <a class="dropdown-item" href="/">
-                                <i class="fas fa-home me-2"></i>Dashboard
-                            </a>
-                        </li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li>
-                            <a class="dropdown-item" href="{{ url_for('logout') }}">
-                                <i class="fas fa-sign-out-alt me-2"></i>Đăng xuất
-                            </a>
-                        </li>
-                    </ul>
-                </div>
+    <!-- Header -->
+    <div class="bulk-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="h4 mb-1">
+                    <i class="fas fa-edit me-2"></i>Chỉnh sửa hàng loạt
+                </h1>
+                <p class="mb-0">Cập nhật nhanh tình trạng phòng cho nhiều phòng cùng lúc</p>
             </div>
-        </div>
-    </nav>
-
-    <div class="container-fluid main-container">
-        <!-- Header -->
-        <div class="row mb-3">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-body">
-                        <h4 class="card-title">
-                            <i class="fas fa-edit me-2"></i>Chỉnh sửa hàng loạt trạng thái phòng
-                        </h4>
-                        <p class="card-text text-muted">
-                            Chức năng này chỉ dành cho bộ phận Front Office (FO). 
-                            Chọn nhiều phòng và cập nhật trạng thái đồng loạt.
-                            <strong>Lưu ý:</strong> Khi chuyển trạng thái sang VD/VC, thông tin khách hiện tại sẽ bị xóa.
-                        </p>
+            <div class="text-end">
+                <div class="d-flex align-items-center">
+                    {% if user %}
+                    <div class="me-3">
+                        <small>FO: <strong>{{ user.name }}</strong></small>
                     </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Selection Info -->
-        <div class="row mb-3" id="selection-info" style="display: none;">
-            <div class="col-12">
-                <div class="selection-info d-flex justify-content-between align-items-center">
-                    <div>
-                        <i class="fas fa-check-circle text-primary me-2"></i>
-                        <span id="selected-count">0</span> phòng đã được chọn
-                    </div>
-                    <button class="btn btn-sm btn-outline-secondary" onclick="clearSelection()">
-                        <i class="fas fa-times me-1"></i>Bỏ chọn tất cả
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Filters -->
-        <div class="row mb-3">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header">
-                        <i class="fas fa-filter me-2"></i>Lọc phòng theo trạng thái
-                    </div>
-                    <div class="card-body">
-                        <div class="d-flex flex-wrap gap-2" id="status-filters">
-                            <span class="filter-badge badge bg-secondary" data-filter="all">
-                                Tất cả <span class="badge bg-light text-dark ms-1" id="count-all">0</span>
-                            </span>
-                            <span class="filter-badge badge status-vd" data-filter="vd">
-                                Vắng dọn (VD) <span class="badge bg-light text-dark ms-1" id="count-vd">0</span>
-                            </span>
-                            <span class="filter-badge badge status-vc" data-filter="vc">
-                                Vắng sạch (VC) <span class="badge bg-light text-dark ms-1" id="count-vc">0</span>
-                            </span>
-                            <span class="filter-badge badge status-od" data-filter="od">
-                                Ở dọn (OD) <span class="badge bg-light text-dark ms-1" id="count-od">0</span>
-                            </span>
-                            <span class="filter-badge badge status-oc" data-filter="oc">
-                                Ở sạch (OC) <span class="badge bg-light text-dark ms-1" id="count-oc">0</span>
-                            </span>
-                            <span class="filter-badge badge status-dnd" data-filter="dnd">
-                                Không làm phiền (DND) <span class="badge bg-light text-dark ms-1" id="count-dnd">0</span>
-                            </span>
-                            <span class="filter-badge badge status-nn" data-filter="nn">
-                                Nhu cầu không (NN) <span class="badge bg-light text-dark ms-1" id="count-nn">0</span>
-                            </span>
-                            <span class="filter-badge badge status-ip" data-filter="ip">
-                                Đang dọn (IP) <span class="badge bg-light text-dark ms-1" id="count-ip">0</span>
-                            </span>
-                            <span class="filter-badge badge status-do" data-filter="do">
-                                Đã rời (DO) <span class="badge bg-light text-dark ms-1" id="count-do">0</span>
-                            </span>
-                            <span class="filter-badge badge status-lock" data-filter="lock">
-                                Khóa (LOCK) <span class="badge bg-light text-dark ms-1" id="count-lock">0</span>
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Bulk Action Form -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="bulk-action-form">
-                    <h5 class="mb-3">
-                        <i class="fas fa-tasks me-2"></i>Cập nhật hàng loạt
-                    </h5>
-                    
-                    <div class="row align-items-end">
-                        <div class="col-md-4 mb-3">
-                            <label for="new-status" class="form-label">Trạng thái mới</label>
-                            <select class="form-select" id="new-status">
-                                <option value="">-- Chọn trạng thái --</option>
-                                <option value="vd">Vắng dọn (VD)</option>
-                                <option value="vc">Vắng sạch (VC)</option>
-                                <option value="od">Ở dọn (OD)</option>
-                                <option value="oc">Ở sạch (OC)</option>
-                                <option value="dnd">Không làm phiền (DND)</option>
-                                <option value="nn">Nhu cầu không (NN)</option>
-                                <option value="ip">Đang dọn (IP)</option>
-                                <option value="do">Đã rời (DO)</option>
-                                <option value="lock">Khóa (LOCK)</option>
-                            </select>
-                        </div>
-                        
-                        <div class="col-md-3 mb-3">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="add-arr-flag">
-                                <label class="form-check-label" for="add-arr-flag">
-                                    Thêm ARR flag
-                                </label>
-                            </div>
-                            <div class="form-text">
-                                Chỉ áp dụng cho VD, VC, DO
-                            </div>
-                        </div>
-                        
-                        <div class="col-md-5 mb-3">
-                            <div class="action-buttons d-flex gap-2">
-                                <button type="button" class="btn btn-primary flex-grow-1" onclick="applyBulkUpdate()" disabled id="apply-bulk-btn">
-                                    <i class="fas fa-save me-2"></i>Áp dụng cho phòng đã chọn
-                                </button>
-                                <button type="button" class="btn btn-outline-secondary" onclick="showBulkUpdateModal()">
-                                    <i class="fas fa-eye me-2"></i>Xem trước
-                                </button>
-                            </div>
-                            <div class="form-text mt-1">
-                                <strong>Lưu ý:</strong> Khi chuyển sang VD/VC, thông tin khách hiện tại sẽ bị xóa.
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Rooms Table -->
-        <div class="row">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <div>
-                            <i class="fas fa-table me-2"></i>Danh sách phòng
-                            <span class="badge bg-secondary ms-2" id="total-rooms">0</span>
-                        </div>
-                        <div class="d-flex align-items-center">
-                            <div class="form-check me-3">
-                                <input class="form-check-input checkbox-select-all" type="checkbox" id="select-all-checkbox">
-                                <label class="form-check-label" for="select-all-checkbox">
-                                    Chọn tất cả
-                                </label>
-                            </div>
-                            <div class="input-group input-group-sm" style="width: 200px;">
-                                <input type="text" class="form-control" placeholder="Tìm kiếm phòng..." id="search-room">
-                                <button class="btn btn-outline-secondary" type="button" id="clear-search">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="card-body p-0">
-                        <div class="table-container">
-                            <table class="table table-hover mb-0" id="rooms-table">
-                                <thead>
-                                    <tr>
-                                        <th width="50" class="text-center">Chọn</th>
-                                        <th width="80">Số phòng</th>
-                                        <th width="100">Loại phòng</th>
-                                        <th width="120">Trạng thái</th>
-                                        <th width="150">Khách hiện tại</th>
-                                        <th width="100">Check-in</th>
-                                        <th width="100">Check-out</th>
-                                        <th width="80">Số khách</th>
-                                        <th width="150">Khách sắp đến</th>
-                                        <th width="100">Check-in</th>
-                                        <th width="100">Check-out</th>
-                                        <th width="80">Số khách</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="rooms-table-body">
-                                    <!-- Data will be populated by JavaScript -->
-                                    <tr id="loading-row">
-                                        <td colspan="12" class="text-center py-5">
-                                            <div class="spinner-border text-primary" role="status">
-                                                <span class="visually-hidden">Đang tải...</span>
-                                            </div>
-                                            <p class="mt-2">Đang tải dữ liệu phòng...</p>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    
-                    <div class="card-footer d-flex justify-content-between align-items-center">
-                        <div class="text-muted" id="table-info">
-                            Hiển thị <span id="displayed-count">0</span> trong tổng số <span id="total-count">0</span> phòng
-                        </div>
-                        <div class="pagination-container">
-                            <nav aria-label="Page navigation">
-                                <ul class="pagination pagination-sm mb-0" id="pagination">
-                                    <!-- Pagination will be generated by JavaScript -->
-                                </ul>
-                            </nav>
-                        </div>
-                    </div>
+                    {% endif %}
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-light btn-sm">
+                        <i class="fas fa-arrow-left me-1"></i>Về Dashboard
+                    </a>
                 </div>
             </div>
         </div>
     </div>
-
-    <!-- Bulk Update Preview Modal -->
-    <div class="modal fade" id="bulkUpdateModal" tabindex="-1" aria-labelledby="bulkUpdateModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
+    
+    <!-- Bulk Controls -->
+    <div class="bulk-controls">
+        <h5 class="mb-3">
+            <i class="fas fa-sliders-h me-2"></i>Điều chỉnh hàng loạt
+        </h5>
+        
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Trạng thái phòng</label>
+                <select class="form-select form-select-sm bulk-status" id="bulkStatus">
+                    <option value="">-- Chọn trạng thái --</option>
+                    <option value="vd">VD - Vacant Dirty (Trống/Bẩn)</option>
+                    <option value="vc">VC - Vacant Clean (Trống/Sạch)</option>
+                    <option value="od">OD - Occupied Dirty (Có khách/Bẩn)</option>
+                    <option value="oc">OC - Occupied Clean (Có khách/Sạch)</option>
+                    <option value="dnd">DND - Do Not Disturb (Không làm phiền)</option>
+                    <option value="nn">NN - No Need (Không dọn)</option>
+                    <option value="lock">LOCK - Khóa phòng</option>
+                    <option value="ip">IP - Inspected (Đã kiểm tra)</option>
+                </select>
+            </div>
+            
+            <div class="col-md-2">
+                <div class="form-check mt-4 pt-2">
+                    <input class="form-check-input bulk-arr-check" type="checkbox" id="bulkArrCheck">
+                    <label class="form-check-label" for="bulkArrCheck">
+                        <strong>ARR</strong> (Có khách đến)
+                    </label>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="d-flex flex-column flex-md-row gap-2 justify-content-end">
+                    <div class="text-end">
+                        <button type="button" class="btn btn-save-all" onclick="saveAllChanges()">
+                            <i class="fas fa-save me-2"></i>Lưu tất cả thay đổi
+                        </button>
+                        <div class="small text-muted mt-1">
+                            <span id="modifiedCount">0</span> phòng có thay đổi chưa lưu
+                        </div>
+                    </div>
+                    
+                    <div class="text-end">
+                        <button type="button" class="btn btn-apply-bulk" onclick="applyBulkChanges()">
+                            <i class="fas fa-check-circle me-2"></i>Áp dụng cho phòng đã chọn
+                        </button>
+                        <div class="small text-muted mt-1">
+                            <span id="selectedCountBadge">0</span> phòng được chọn
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quick Status Info -->
+        <div class="bulk-actions-row mt-3">
+            <div class="d-flex flex-wrap gap-2 align-items-center">
+                <small class="text-muted me-2"><strong>Chú thích trạng thái:</strong></small>
+                <span class="badge bg-primary status-badge">VD = Vacant Dirty (Trống/Bẩn)</span>
+                <span class="badge bg-success status-badge">VC = Vacant Clean (Trống/Sạch)</span>
+                <span class="badge bg-danger status-badge">OD = Occupied Dirty (Có khách/Bẩn)</span>
+                <span class="badge bg-warning text-dark status-badge">OC = Occupied Clean (Có khách/Sạch)</span>
+                <span class="badge bg-info status-badge">DND = Không làm phiền</span>
+                <span class="badge bg-secondary status-badge">NN = Không dọn</span>
+                <span class="badge bg-dark status-badge">LOCK = Khóa phòng</span>
+                <span class="badge bg-light text-dark status-badge">IP = Đã kiểm tra</span>
+                <span class="badge bg-warning text-dark status-badge">/ARR = Có khách đến</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Room Table -->
+    <div class="room-table-container">
+        <div class="scrollable-container">
+            <table class="room-table">
+                <thead>
+                    <tr>
+                        <th class="checkbox-cell">
+                            <input type="checkbox" class="form-check-input" id="selectAllRooms">
+                        </th>
+                        <th class="room-number-cell">Phòng</th>
+                        <th class="status-cell">Trạng thái</th>
+                        <th class="guest-cell">Khách hiện tại</th>
+                        <th class="arr-cell">ARR</th>
+                        <th class="guest-cell">Khách mới (ARR)</th>
+                    </tr>
+                </thead>
+                <tbody id="roomsTableBody">
+                    <!-- Rows will be populated by JavaScript -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Action Buttons -->
+    <div class="action-buttons">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="d-flex align-items-center">
+                    <div class="me-3">
+                        <span class="badge bg-info">Tổng: <span id="totalRoomsCount">0</span> phòng</span>
+                    </div>
+                    <button type="button" class="btn btn-warning btn-sm" onclick="loadRooms()">
+                        <i class="fas fa-redo me-1"></i>Tải lại dữ liệu
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-6 text-end">
+                <button type="button" class="btn btn-primary btn-sm me-2" onclick="showHelp()">
+                    <i class="fas fa-question-circle me-1"></i>Hướng dẫn
+                </button>
+                <button type="button" class="btn btn-outline-secondary btn-sm me-2" onclick="clearAllSelections()">
+                    <i class="fas fa-times-circle me-1"></i>Bỏ chọn tất cả
+                </button>
+                <button type="button" class="btn btn-danger btn-sm" onclick="window.close()">
+                    <i class="fas fa-times me-1"></i>Đóng tab
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+        <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+            <span class="visually-hidden">Đang tải...</span>
+        </div>
+        <p class="mt-3" id="loadingText">Đang tải dữ liệu phòng...</p>
+    </div>
+    
+    <!-- Success Toast -->
+    <div class="position-fixed top-0 end-0 p-3" style="z-index: 1050">
+        <div id="successToast" class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body">
+                    <i class="fas fa-check-circle me-2"></i><span id="toastMessage"></span>
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Confirmation Modal -->
+    <div class="modal fade" id="confirmSaveModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="bulkUpdateModalLabel">
-                        <i class="fas fa-eye me-2"></i>Xem trước cập nhật hàng loạt
+                    <h5 class="modal-title">
+                        <i class="fas fa-exclamation-triangle text-warning me-2"></i>Xác nhận lưu thay đổi
                     </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
+                    <p>Bạn có chắc chắn muốn lưu tất cả thay đổi?</p>
                     <div class="alert alert-info">
                         <i class="fas fa-info-circle me-2"></i>
-                        Dưới đây là danh sách phòng sẽ được cập nhật
+                        Tổng cộng <strong><span id="modalModifiedCount">0</span> phòng</strong> sẽ được cập nhật.
                     </div>
-                    
-                    <div class="table-responsive">
-                        <table class="table table-sm">
-                            <thead>
-                                <tr>
-                                    <th>Số phòng</th>
-                                    <th>Trạng thái hiện tại</th>
-                                    <th>Trạng thái mới</th>
-                                    <th>Thay đổi</th>
-                                </tr>
-                            </thead>
-                            <tbody id="preview-table-body">
-                                <!-- Preview data will be populated by JavaScript -->
-                            </tbody>
-                        </table>
-                    </div>
-                    
-                    <div class="alert alert-warning mt-3" id="vd-vc-warning" style="display: none;">
+                    <div class="alert alert-warning">
                         <i class="fas fa-exclamation-triangle me-2"></i>
-                        <strong>Cảnh báo:</strong> Khi chuyển sang VD/VC, thông tin khách hiện tại sẽ bị xóa!
-                    </div>
-                    
-                    <div class="alert alert-warning mt-3">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        <strong>Cảnh báo:</strong> Hành động này sẽ cập nhật trạng thái của 
-                        <span id="preview-count" class="fw-bold">0</span> phòng. 
-                        Bạn không thể hoàn tác sau khi xác nhận.
+                        <strong>Lưu ý:</strong> Khi chuyển phòng sang trạng thái VD hoặc VC (Vacant), 
+                        thông tin khách hiện tại sẽ được giữ lại nhưng trạng thái phòng sẽ hiển thị là "Trống".
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-                    <button type="button" class="btn btn-primary" onclick="confirmBulkUpdate()">
-                        <i class="fas fa-check me-2"></i>Xác nhận cập nhật
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="button" class="btn btn-success" onclick="confirmSaveAll()">
+                        <i class="fas fa-check me-2"></i>Đồng ý lưu
                     </button>
                 </div>
             </div>
         </div>
     </div>
-
-    <!-- Success Modal -->
-    <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header bg-success text-white">
-                    <h5 class="modal-title" id="successModalLabel">
-                        <i class="fas fa-check-circle me-2"></i>Thành công
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body text-center">
-                    <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
-                    <h5 class="mb-3">Cập nhật thành công!</h5>
-                    <p id="success-message">Đã cập nhật trạng thái cho các phòng đã chọn.</p>
-                </div>
-                <div class="modal-footer justify-content-center">
-                    <button type="button" class="btn btn-success" data-bs-dismiss="modal">OK</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Error Modal -->
-    <div class="modal fade" id="errorModal" tabindex="-1" aria-labelledby="errorModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header bg-danger text-white">
-                    <h5 class="modal-title" id="errorModalLabel">
-                        <i class="fas fa-exclamation-circle me-2"></i>Lỗi
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body text-center">
-                    <i class="fas fa-exclamation-circle fa-3x text-danger mb-3"></i>
-                    <h5 class="mb-3">Đã xảy ra lỗi!</h5>
-                    <p id="error-message">Không thể cập nhật trạng thái phòng.</p>
-                </div>
-                <div class="modal-footer justify-content-center">
-                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Đóng</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
+    
     <!-- JavaScript -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
-    
-    <script>
-        // Global variables
-        let allRooms = [];
-        let filteredRooms = [];
-        let displayedRooms = [];
-        let selectedRooms = new Set();
-        let currentFilter = 'all';
-        let currentPage = 1;
-        const itemsPerPage = 25;
-        let searchQuery = '';
-        
-        // DOM elements
-        const roomsTableBody = document.getElementById('rooms-table-body');
-        const loadingRow = document.getElementById('loading-row');
-        const selectAllCheckbox = document.getElementById('select-all-checkbox');
-        const applyBulkBtn = document.getElementById('apply-bulk-btn');
-        const selectionInfo = document.getElementById('selection-info');
-        const selectedCountSpan = document.getElementById('selected-count');
-        const searchInput = document.getElementById('search-room');
-        const clearSearchBtn = document.getElementById('clear-search');
-        const totalRoomsSpan = document.getElementById('total-rooms');
-        const displayedCountSpan = document.getElementById('displayed-count');
-        const totalCountSpan = document.getElementById('total-count');
-        const paginationElement = document.getElementById('pagination');
-        
-        // Status counters
-        const statusCounters = {
-            'all': document.getElementById('count-all'),
-            'vd': document.getElementById('count-vd'),
-            'vc': document.getElementById('count-vc'),
-            'od': document.getElementById('count-od'),
-            'oc': document.getElementById('count-oc'),
-            'dnd': document.getElementById('count-dnd'),
-            'nn': document.getElementById('count-nn'),
-            'ip': document.getElementById('count-ip'),
-            'do': document.getElementById('count-do'),
-            'lock': document.getElementById('count-lock')
-        };
-        
-        // Initialize when page loads
-        document.addEventListener('DOMContentLoaded', function() {
-            loadRoomsData();
-            setupEventListeners();
-        });
-        
-        function setupEventListeners() {
-            // Filter badges click event
-            document.querySelectorAll('.filter-badge').forEach(badge => {
-                badge.addEventListener('click', function() {
-                    const filter = this.getAttribute('data-filter');
-                    setFilter(filter);
-                });
-            });
-            
-            // Select all checkbox
-            selectAllCheckbox.addEventListener('change', function() {
-                toggleSelectAll(this.checked);
-            });
-            
-            // Search input
-            searchInput.addEventListener('input', function() {
-                searchQuery = this.value.trim().toLowerCase();
-                applyFilters();
-            });
-            
-            // Clear search button
-            clearSearchBtn.addEventListener('click', function() {
-                searchInput.value = '';
-                searchQuery = '';
-                applyFilters();
-            });
-            
-            // New status select change
-            document.getElementById('new-status').addEventListener('change', function() {
-                updateApplyButtonState();
-            });
-        }
-        
-        function loadRoomsData() {
-            fetch('/api/rooms')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        allRooms = data.data;
-                        updateStatusCounters();
-                        applyFilters();
-                        loadingRow.style.display = 'none';
-                    } else {
-                        showError('Không thể tải dữ liệu phòng: ' + data.error);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error loading rooms:', error);
-                    showError('Lỗi kết nối đến server');
-                });
-        }
-        
-        function updateStatusCounters() {
-            // Initialize counters
-            const counters = {
-                'all': allRooms.length,
-                'vd': 0, 'vc': 0, 'od': 0, 'oc': 0,
-                'dnd': 0, 'nn': 0, 'ip': 0, 'do': 0, 'lock': 0
-            };
-            
-            // Count rooms by status
-            allRooms.forEach(room => {
-                const status = getBaseStatus(room.roomStatus);
-                if (counters[status] !== undefined) {
-                    counters[status]++;
-                }
-            });
-            
-            // Update counter elements
-            Object.keys(counters).forEach(status => {
-                if (statusCounters[status]) {
-                    statusCounters[status].textContent = counters[status];
-                }
-            });
-            
-            totalRoomsSpan.textContent = allRooms.length;
-        }
-        
-        function getBaseStatus(status) {
-            // Extract base status (remove /arr part)
-            if (!status) return 'vc';
-            return status.split('/')[0];
-        }
-        
-        function setFilter(filter) {
-            // Update active filter
-            document.querySelectorAll('.filter-badge').forEach(badge => {
-                if (badge.getAttribute('data-filter') === filter) {
-                    badge.classList.add('active');
-                } else {
-                    badge.classList.remove('active');
-                }
-            });
-            
-            currentFilter = filter;
-            applyFilters();
-        }
-        
-        function applyFilters() {
-            // Apply filter and search
-            filteredRooms = allRooms.filter(room => {
-                // Apply status filter
-                if (currentFilter !== 'all') {
-                    const baseStatus = getBaseStatus(room.roomStatus);
-                    if (baseStatus !== currentFilter) return false;
-                }
-                
-                // Apply search filter
-                if (searchQuery) {
-                    const roomNo = room.roomNo.toLowerCase();
-                    const guestName = room.currentGuest.name.toLowerCase();
-                    const newGuestName = room.newGuest.name.toLowerCase();
-                    
-                    if (!roomNo.includes(searchQuery) && 
-                        !guestName.includes(searchQuery) && 
-                        !newGuestName.includes(searchQuery)) {
-                        return false;
-                    }
-                }
-                
-                return true;
-            });
-            
-            // Update selection (deselect rooms that are no longer visible)
-            selectedRooms.forEach(roomNo => {
-                const roomStillVisible = filteredRooms.some(room => room.roomNo === roomNo);
-                if (!roomStillVisible) {
-                    selectedRooms.delete(roomNo);
-                }
-            });
-            
-            updateTable();
-            updateSelectionInfo();
-            updateApplyButtonState();
-        }
-        
-        function updateTable() {
-            // Clear table body
-            roomsTableBody.innerHTML = '';
-            
-            if (filteredRooms.length === 0) {
-                roomsTableBody.innerHTML = `
-                    <tr>
-                        <td colspan="12" class="text-center py-5">
-                            <i class="fas fa-inbox fa-2x text-muted mb-3"></i>
-                            <p>Không có phòng nào phù hợp với bộ lọc</p>
-                        </td>
-                    </tr>
-                `;
-                updatePagination();
-                return;
-            }
-            
-            // Calculate pagination
-            const totalPages = Math.ceil(filteredRooms.length / itemsPerPage);
-            currentPage = Math.min(currentPage, totalPages);
-            const startIndex = (currentPage - 1) * itemsPerPage;
-            const endIndex = Math.min(startIndex + itemsPerPage, filteredRooms.length);
-            
-            displayedRooms = filteredRooms.slice(startIndex, endIndex);
-            
-            // Add rows for displayed rooms
-            displayedRooms.forEach(room => {
-                const isSelected = selectedRooms.has(room.roomNo);
-                const row = createRoomRow(room, isSelected);
-                roomsTableBody.appendChild(row);
-            });
-            
-            // Update info
-            displayedCountSpan.textContent = displayedRooms.length;
-            totalCountSpan.textContent = filteredRooms.length;
-            
-            updatePagination();
-        }
-        
-        function createRoomRow(room, isSelected) {
-            const row = document.createElement('tr');
-            if (isSelected) row.classList.add('selected');
-            
-            // Determine status class
-            const baseStatus = getBaseStatus(room.roomStatus);
-            const hasArrFlag = room.roomStatus.includes('/arr');
-            let statusClass = `status-${baseStatus}`;
-            if (hasArrFlag) statusClass += ' status-arr';
-            
-            // Create row HTML
-            row.innerHTML = `
-                <td class="text-center">
-                    <input type="checkbox" class="form-check-input room-checkbox" 
-                           data-room="${room.roomNo}" 
-                           ${isSelected ? 'checked' : ''}>
-                </td>
-                <td class="fw-bold">${room.roomNo}</td>
-                <td>${room.roomType || ''}</td>
-                <td>
-                    <span class="status-badge ${statusClass}">
-                        ${room.roomStatus}
-                    </span>
-                </td>
-                <td class="guest-info" title="${room.currentGuest.name}">
-                    ${room.currentGuest.name || ''}
-                </td>
-                <td>${room.currentGuest.checkIn || ''}</td>
-                <td>${room.currentGuest.checkOut || ''}</td>
-                <td class="text-center">${room.currentGuest.pax || ''}</td>
-                <td class="guest-info" title="${room.newGuest.name}">
-                    ${room.newGuest.name || ''}
-                </td>
-                <td>${room.newGuest.checkIn || ''}</td>
-                <td>${room.newGuest.checkOut || ''}</td>
-                <td class="text-center">${room.newGuest.pax || ''}</td>
-            `;
-            
-            // Add checkbox event listener
-            const checkbox = row.querySelector('.room-checkbox');
-            checkbox.addEventListener('change', function() {
-                toggleRoomSelection(this);
-            });
-            
-            return row;
-        }
-        
-        function updatePagination() {
-            const totalPages = Math.ceil(filteredRooms.length / itemsPerPage);
-            paginationElement.innerHTML = '';
-            
-            if (totalPages <= 1) return;
-            
-            // Previous button
-            const prevLi = document.createElement('li');
-            prevLi.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
-            prevLi.innerHTML = `
-                <a class="page-link" href="#" aria-label="Previous" onclick="changePage(${currentPage - 1})">
-                    <span aria-hidden="true">&laquo;</span>
-                </a>
-            `;
-            paginationElement.appendChild(prevLi);
-            
-            // Page numbers
-            const maxVisiblePages = 5;
-            let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-            let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-            
-            if (endPage - startPage + 1 < maxVisiblePages) {
-                startPage = Math.max(1, endPage - maxVisiblePages + 1);
-            }
-            
-            for (let i = startPage; i <= endPage; i++) {
-                const pageLi = document.createElement('li');
-                pageLi.className = `page-item ${i === currentPage ? 'active' : ''}`;
-                pageLi.innerHTML = `<a class="page-link" href="#" onclick="changePage(${i})">${i}</a>`;
-                paginationElement.appendChild(pageLi);
-            }
-            
-            // Next button
-            const nextLi = document.createElement('li');
-            nextLi.className = `page-item ${currentPage === totalPages ? 'disabled' : ''}`;
-            nextLi.innerHTML = `
-                <a class="page-link" href="#" aria-label="Next" onclick="changePage(${currentPage + 1})">
-                    <span aria-hidden="true">&raquo;</span>
-                </a>
-            `;
-            paginationElement.appendChild(nextLi);
-        }
-        
-        function changePage(page) {
-            if (page < 1 || page > Math.ceil(filteredRooms.length / itemsPerPage)) return;
-            currentPage = page;
-            updateTable();
-        }
-        
-        function toggleRoomSelection(checkbox) {
-            const roomNo = checkbox.getAttribute('data-room');
-            const row = checkbox.closest('tr');
-            
-            if (checkbox.checked) {
-                selectedRooms.add(roomNo);
-                row.classList.add('selected');
-            } else {
-                selectedRooms.delete(roomNo);
-                row.classList.remove('selected');
-                selectAllCheckbox.checked = false;
-            }
-            
-            updateSelectionInfo();
-            updateApplyButtonState();
-        }
-        
-        function toggleSelectAll(selectAll) {
-            // Update all checkboxes on current page
-            document.querySelectorAll('.room-checkbox').forEach(checkbox => {
-                const roomNo = checkbox.getAttribute('data-room');
-                checkbox.checked = selectAll;
-                
-                if (selectAll) {
-                    selectedRooms.add(roomNo);
-                    checkbox.closest('tr').classList.add('selected');
-                } else {
-                    selectedRooms.delete(roomNo);
-                    checkbox.closest('tr').classList.remove('selected');
-                }
-            });
-            
-            updateSelectionInfo();
-            updateApplyButtonState();
-        }
-        
-        function clearSelection() {
-            selectedRooms.clear();
-            selectAllCheckbox.checked = false;
-            
-            // Update all checkboxes
-            document.querySelectorAll('.room-checkbox').forEach(checkbox => {
-                checkbox.checked = false;
-                checkbox.closest('tr').classList.remove('selected');
-            });
-            
-            updateSelectionInfo();
-            updateApplyButtonState();
-        }
-        
-        function updateSelectionInfo() {
-            const selectedCount = selectedRooms.size;
-            
-            if (selectedCount > 0) {
-                selectedCountSpan.textContent = selectedCount;
-                selectionInfo.style.display = 'block';
-            } else {
-                selectionInfo.style.display = 'none';
-            }
-        }
-        
-        function updateApplyButtonState() {
-            const newStatus = document.getElementById('new-status').value;
-            const hasSelection = selectedRooms.size > 0;
-            
-            applyBulkBtn.disabled = !(hasSelection && newStatus);
-        }
-        
-        function showBulkUpdateModal() {
-            const newStatus = document.getElementById('new-status').value;
-            const addArrFlag = document.getElementById('add-arr-flag').checked;
-            
-            if (!newStatus) {
-                showError('Vui lòng chọn trạng thái mới trước khi xem trước');
-                return;
-            }
-            
-            if (selectedRooms.size === 0) {
-                showError('Vui lòng chọn ít nhất một phòng');
-                return;
-            }
-            
-            // Calculate final status
-            let finalStatus = newStatus;
-            if (addArrFlag && ['vd', 'vc', 'do'].includes(newStatus)) {
-                finalStatus = `${newStatus}/arr`;
-            }
-            
-            // Populate preview table
-            const previewTableBody = document.getElementById('preview-table-body');
-            previewTableBody.innerHTML = '';
-            
-            let count = 0;
-            let showVdVcWarning = false;
-            
-            // Check if any room will have guest info cleared
-            allRooms.forEach(room => {
-                if (selectedRooms.has(room.roomNo)) {
-                    count++;
-                    const row = document.createElement('tr');
-                    const currentGuestName = room.currentGuest.name || '(Không có)';
-                    const willClearGuest = (newStatus === 'vd' || newStatus === 'vc') && currentGuestName !== '(Không có)';
-                    
-                    if (willClearGuest) {
-                        showVdVcWarning = true;
-                    }
-                    
-                    row.innerHTML = `
-                        <td class="fw-bold">${room.roomNo}</td>
-                        <td>
-                            <span class="status-badge status-${getBaseStatus(room.roomStatus)}">
-                                ${room.roomStatus}
-                            </span>
-                        </td>
-                        <td>
-                            <span class="status-badge status-${newStatus}">
-                                ${finalStatus}
-                            </span>
-                        </td>
-                        <td>
-                            ${willClearGuest ? 
-                              '<span class="badge bg-warning text-dark"><i class="fas fa-user-times me-1"></i>Xóa khách</span>' : 
-                              '<span class="badge bg-secondary">Chỉ đổi trạng thái</span>'}
-                        </td>
-                    `;
-                    previewTableBody.appendChild(row);
-                }
-            });
-            
-            document.getElementById('preview-count').textContent = count;
-            
-            // Show/hide VD/VC warning
-            const warningElement = document.getElementById('vd-vc-warning');
-            if (showVdVcWarning) {
-                warningElement.style.display = 'block';
-            } else {
-                warningElement.style.display = 'none';
-            }
-            
-            // Show modal
-            const modal = new bootstrap.Modal(document.getElementById('bulkUpdateModal'));
-            modal.show();
-        }
-        
-        function confirmBulkUpdate() {
-            const newStatus = document.getElementById('new-status').value;
-            const addArrFlag = document.getElementById('add-arr-flag').checked;
-            
-            // Calculate final status
-            let finalStatus = newStatus;
-            if (addArrFlag && ['vd', 'vc', 'do'].includes(newStatus)) {
-                finalStatus = `${newStatus}/arr`;
-            }
-            
-            // Prepare update data
-            const updates = Array.from(selectedRooms).map(roomNo => {
-                // If changing to VD/VC, we need to clear current guest info
-                const updateData = {
-                    roomNo: roomNo,
-                    updatedData: {
-                        roomStatus: finalStatus
-                    }
-                };
-                
-                // If status is VD or VC, add empty currentGuest data to clear it
-                if (newStatus === 'vd' || newStatus === 'vc') {
-                    updateData.updatedData.currentGuest = {
-                        name: '',
-                        checkIn: '',
-                        checkOut: '',
-                        pax: 0
-                    };
-                }
-                
-                return updateData;
-            });
-            
-            // Close preview modal
-            const previewModal = bootstrap.Modal.getInstance(document.getElementById('bulkUpdateModal'));
-            previewModal.hide();
-            
-            // Show loading state
-            applyBulkBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Đang xử lý...';
-            applyBulkBtn.disabled = true;
-            
-            // Send bulk update requests
-            updateRoomsSequentially(updates, 0);
-        }
-        
-        function updateRoomsSequentially(updates, index) {
-            if (index >= updates.length) {
-                // All updates completed
-                applyBulkBtn.innerHTML = '<i class="fas fa-save me-2"></i>Áp dụng cho phòng đã chọn';
-                updateApplyButtonState();
-                
-                // Show success modal
-                document.getElementById('success-message').textContent = 
-                    `Đã cập nhật thành công ${updates.length} phòng sang trạng thái "${updates[0]?.updatedData?.roomStatus || ''}"`;
-                
-                const successModal = new bootstrap.Modal(document.getElementById('successModal'));
-                successModal.show();
-                
-                // Reload data after success
-                setTimeout(() => {
-                    loadRoomsData();
-                    clearSelection();
-                }, 1000);
-                
-                return;
-            }
-            
-            const update = updates[index];
-            
-            // Send individual update request
-            fetch('/api/rooms/update', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(update)
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (!data.success) {
-                    console.error(`Failed to update room ${update.roomNo}:`, data.error);
-                    // Continue with next room even if one fails
-                }
-                
-                // Update progress in button
-                const progress = Math.round(((index + 1) / updates.length) * 100);
-                applyBulkBtn.innerHTML = `<i class="fas fa-spinner fa-spin me-2"></i>Đang xử lý... ${progress}%`;
-                
-                // Process next room
-                updateRoomsSequentially(updates, index + 1);
-            })
-            .catch(error => {
-                console.error(`Error updating room ${update.roomNo}:`, error);
-                // Continue with next room
-                updateRoomsSequentially(updates, index + 1);
-            });
-        }
-        
-        function applyBulkUpdate() {
-            showBulkUpdateModal();
-        }
-        
-        function showError(message) {
-            document.getElementById('error-message').textContent = message;
-            const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
-            errorModal.show();
-        }
-    </script>
+    <script src="{{ url_for('static', filename='js/bulk_edit.js') }}"></script>
 </body>
 </html>
